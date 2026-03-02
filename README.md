@@ -91,3 +91,31 @@ HomePilot is **architected as a production-ready monorepo**:
   - OpenAPI spec auto-generated from FastAPI routes
   - Swagger UI available in development for interactive exploration of endpoints
 
+## Running the project
+
+**With Docker Compose** (Postgres + backend + frontend):
+
+```bash
+docker compose -f infrastructure/docker-compose.yml up --build -d
+```
+
+Then open [http://localhost:9002](http://localhost:9002) (frontend) and [http://localhost:9001/docs](http://localhost:9001/docs) (API docs).
+
+**Local dev without Postgres** (backend with SQLite, frontend separately):
+
+```bash
+# Terminal 1 – backend
+cd backend && DATABASE_URL=sqlite:///:memory: PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload --port 8000
+
+# Terminal 2 – frontend
+cd frontend && npm run dev
+```
+
+Set `NEXT_PUBLIC_API_URL=http://localhost:8000` in `frontend/.env.local` if needed.
+
+## Next Steps
+
+- Implement initial domain models and calculation utilities in the `calculation_engine`.
+- Define Pydantic schemas and FastAPI routers for core calculation and affordability endpoints.
+- Wire up the frontend scenario builder and dashboards to the REST API.
+- Add AI provider integration for narrative explanations and scenario recommendations.
