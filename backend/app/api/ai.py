@@ -16,6 +16,7 @@ def post_explain(req: ExplainRequest) -> ExplainResponse:
     result = explain_affordability(
         monthly_income=req.monthly_income,
         monthly_housing=req.monthly_housing,
+        other_needs=req.other_needs,
         is_affordable=req.is_affordable,
         housing_pct_of_income=req.housing_pct_of_income,
         needs_budget_50=req.needs_budget_50,

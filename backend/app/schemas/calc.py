@@ -1,7 +1,7 @@
 """Pydantic schemas for calculation API."""
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class LoanTermsRequest(BaseModel):
@@ -18,6 +18,12 @@ class LoanTermsRequest(BaseModel):
         le=5,
         description="Maintenance as % of home value per year (e.g. 0.5 for 0.5%)",
     )
+
+    @model_validator(mode="after")
+    def down_payment_less_than_home_value(self) -> "LoanTermsRequest":
+        if self.down_payment >= self.home_value:
+            raise ValueError("Down payment must be less than home value.")
+        return self
 
     @property
     def loan_amount(self) -> Decimal:
