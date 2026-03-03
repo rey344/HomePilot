@@ -12,6 +12,7 @@ def test_explain_endpoint_affordable():
         json={
             "monthly_income": 6000,
             "monthly_housing": 2000,
+            "other_needs": 500,
             "is_affordable": True,
             "housing_pct_of_income": 33.33,
             "needs_budget_50": 3000,
@@ -32,6 +33,7 @@ def test_explain_endpoint_not_affordable():
         json={
             "monthly_income": 6000,
             "monthly_housing": 3200,
+            "other_needs": 0,
             "is_affordable": False,
             "housing_pct_of_income": 53.33,
             "needs_budget_50": 3000,

@@ -6,6 +6,7 @@ def test_explain_affordable():
     r = explain_affordability(
         monthly_income=6000,
         monthly_housing=2000,
+        other_needs=500,
         is_affordable=True,
         housing_pct_of_income=33.33,
         needs_budget_50=3000,
@@ -19,6 +20,7 @@ def test_explain_not_affordable():
     r = explain_affordability(
         monthly_income=6000,
         monthly_housing=3500,
+        other_needs=0,
         is_affordable=False,
         housing_pct_of_income=58.33,
         needs_budget_50=3000,
