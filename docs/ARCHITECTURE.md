@@ -1,6 +1,6 @@
 # HomePilot – Architecture
 
-This document describes the high-level architecture of HomePilot: system boundaries, domain separation, API design, and deployment model.
+System boundaries, domain separation, API design, and data flow.
 
 ---
 
@@ -9,37 +9,35 @@ This document describes the high-level architecture of HomePilot: system boundar
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              CLIENT (Browser)                                │
-│                    Next.js + React + TypeScript (frontend/)                  │
+│              Next.js + React + TypeScript (frontend/)                         │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  domain/ (pure)  │  ScenarioBuilder  │  lib/api.ts  │  ui components  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
 └───────────────────────────────────────────┬─────────────────────────────────┘
-                                            │ HTTPS / REST
+                                            │ REST (optional: /api/ai/explain)
                                             ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           API GATEWAY / BACKEND                              │
-│                         FastAPI (backend/app/)                               │
+│                           FastAPI Backend (backend/app/)                      │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │ /api/calc   │  │ /api/profile │  │ /api/ai     │  │ OpenAPI / Swagger UI │ │
-│  │ (PITI, PMI, │  │ (50/30/20,   │  │ (narratives,│  │                     │ │
-│  │  amort.)    │  │  scenarios)  │  │  coaching)  │  │                     │ │
+│  │ /api/calc   │  │ /api/profile │  │ /api/ai     │  │ OpenAPI / Swagger   │ │
+│  │ PITI, PMI,  │  │ affordability│  │ explain     │  │ /docs               │ │
+│  │ amortization │  │ scenarios    │  │             │  │                     │ │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └─────────────────────┘ │
 │         │                │                │                                  │
 │         ▼                ▼                ▼                                  │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                           │
-│  │ calculation │  │  profile    │  │   ai_       │                           │
-│  │   _engine   │  │  _modeling  │  │  services   │                           │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘                           │
-│         │                │                │                                  │
-└─────────┼────────────────┼────────────────┼──────────────────────────────────┘
-          │                │                │
-          ▼                ▼                ▼
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                          │
+│  │ calculation │  │  profile     │  │ ai_services │                          │
+│  │   _engine    │  │  _modeling   │  │             │                          │
+│  └─────────────┘  └─────────────┘  └─────────────┘                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                            │
+                                            ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  PostgreSQL (persistence: profiles, scenarios, session data)                 │
-│  Optional: external AI provider (OpenAI, etc.)                              │
+│  PostgreSQL (Docker) or SQLite (local dev)                                 │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Frontend**: Single-page experience backed by Next.js; talks to the backend via REST.
-- **Backend**: Single FastAPI application with domain modules; exposes typed REST APIs and OpenAPI.
-- **Data**: PostgreSQL for persisted state; calculation engine is largely stateless and deterministic.
+**Key design:** The frontend has a **domain layer** (`frontend/src/domain/`) with pure TypeScript functions for mortgage and budget calculations. All UI outputs are derived from a single `calculateAffordabilitySummary(scenario)` call. The backend is used for AI explain and optional scenario persistence; core calculations can run entirely in the frontend.
 
 ---
 
@@ -47,125 +45,122 @@ This document describes the high-level architecture of HomePilot: system boundar
 
 ```
 HomePilot/
-├── frontend/                 # Next.js + TypeScript app
-│   ├── app/                  # App Router pages & layouts
-│   ├── components/           # UI components
-│   ├── lib/                  # API client, types, utils
+├── frontend/
+│   ├── src/
+│   │   ├── app/              # App Router, layout, globals.css
+│   │   ├── components/
+│   │   │   ├── ScenarioBuilder.tsx
+│   │   │   └── ui/           # Card, Button, Input
+│   │   ├── domain/           # Pure calculations (single source of truth)
+│   │   │   ├── index.ts      # calculateAffordabilitySummary, Scenario type
+│   │   │   ├── mortgage.ts   # loan amount, PI, tax, insurance, PMI, amortization
+│   │   │   ├── budget.ts     # 50/30/20 affordability
+│   │   │   ├── round.ts      # formatCurrency, roundToCents
+│   │   │   └── validate.ts   # validateScenario
+│   │   ├── lib/
+│   │   │   ├── api.ts        # fetchPiti, fetchAffordability, fetchExplain, etc.
+│   │   │   └── validate.ts   # parseApiError
+│   │   └── e2e/              # Playwright tests
+│   ├── vitest.config.ts
 │   └── package.json
-├── backend/                  # FastAPI application
+├── backend/
 │   ├── app/
-│   │   ├── api/              # Route handlers (/api/calc, /api/profile, /api/ai)
+│   │   ├── api/              # calc, profile, ai routers
 │   │   ├── calculation_engine/
 │   │   ├── profile_modeling/
 │   │   ├── ai_services/
-│   │   ├── db/               # DB connection, migrations
-│   │   ├── schemas/          # Pydantic request/response models
-│   │   └── main.py
+│   │   ├── db/
+│   │   └── schemas/
 │   ├── tests/
-│   ├── requirements.txt
-│   └── Dockerfile
+│   └── requirements.txt
 ├── infrastructure/
-│   ├── docker-compose.yml    # Local dev: frontend, backend, postgres
-│   ├── .env.example
-│   └── (optional) prod configs
-├── docs/
-│   └── ARCHITECTURE.md       # This file
-└── README.md
+│   └── docker-compose.yml
+└── docs/
+    ├── ARCHITECTURE.md
+    └── DESIGN.md
 ```
 
-- **frontend/** and **backend/** are the two main deployable units; **infrastructure/** defines how they run together (e.g. Docker Compose).
+---
+
+## 3. Frontend Domain Layer
+
+The **domain** module is the single source of truth for all derived outputs.
+
+### 3.1 Scenario → Result Pipeline
+
+```
+Scenario (inputs)  →  calculateAffordabilitySummary()  →  AffordabilityResult
+     │                                    │
+     │                                    ├── piti (PitiBreakdown)
+     │                                    ├── affordability (50/30/20)
+     │                                    └── amortization (schedule)
+```
+
+- **Scenario**: `homeValue`, `downPayment`, `annualRatePercent`, `termYears`, `annualPropertyTaxPercent`, `annualInsurancePercent`, `hoaMonthly`, `annualMaintenancePercent`, `monthlyTakeHomeIncome`, `otherMonthlyNeeds`
+- **Result**: PITI breakdown, affordability summary, amortization schedule (first N months)
+
+### 3.2 Pure Functions (`domain/`)
+
+| Function | Purpose |
+|----------|---------|
+| `calculateLoanAmount(homeValue, downPayment)` | Loan amount |
+| `calculateMonthlyPI(loanAmount, rate, termYears)` | Principal + interest |
+| `calculateMonthlyPropertyTax`, `calculateMonthlyInsurance`, `calculateMonthlyMaintenance` | Tax, insurance, maintenance |
+| `calculateMonthlyPMI(loanAmount, homeValue)` | PMI (0 when LTV ≤ 80%) |
+| `amortizationSchedule(...)` | Per-month principal, interest, balance |
+| `calculateAffordability(income, housing, otherNeeds)` | 50/30/20 summary |
+| `validateScenario(scenario)` | Strict validation, no coercion |
+
+### 3.3 ScenarioBuilder UX
+
+- **Raw string state** for inputs (avoids "zero sticky" bug); parse only on blur and Calculate
+- **Single compute** on "Calculate" click; all cards (monthly cost, 50/30/20, amortization) read from one `result`
+- **Validation** blocks Calculate when invalid; shows per-field errors
+- **AI explain** fetched from backend after compute; optional
 
 ---
 
-## 3. Backend Domain Modules
+## 4. Backend Domain Modules
 
-### 3.1 Calculation Engine (`calculation_engine`)
+### 4.1 Calculation Engine (`calculation_engine`)
 
-- **Responsibility**: Pure financial math. No I/O, no AI, minimal dependencies.
-- **Outputs**: PITI, PMI (credit-score-based), HOA, maintenance estimates, full amortization schedules.
-- **Design**:
-  - Configurable loan terms (e.g. 15/20/30 years), rate, down payment, property tax rate, insurance.
-  - PMI derived from LTV and credit-score bands (rule-based, extensible).
-  - Amortization: per-period principal, interest, balance; hooks for extra payments / rate changes.
-- **Testing**: Unit tests with fixed inputs and expected numbers; no mocks required for core logic.
+- PITI, PMI (LTV bands), HOA, maintenance, amortization
+- Pure logic; unit-tested
 
-### 3.2 Profile Modeling (`profile_modeling`)
+### 4.2 Profile Modeling (`profile_modeling`)
 
-- **Responsibility**: User financial profile and 50/30/20 affordability classification.
-- **Concepts**: Income, fixed/optional expenses, savings targets; one or many “scenarios” (e.g. different home price, rate, term).
-- **Design**:
-  - Consumes calculation engine output (monthly housing cost) and compares to 50% needs / 30% wants / 20% savings.
-  - Flags when housing pushes over the 50% needs cap or crowds other buckets.
-  - Scenario management: create, update, compare scenarios; persistence in PostgreSQL.
+- 50/30/20 affordability
+- Scenario CRUD (PostgreSQL)
 
-### 3.3 AI Services (`ai_services`)
+### 4.3 AI Services (`ai_services`)
 
-- **Responsibility**: AI-driven narratives, coaching, and recommendations.
-- **Design**:
-  - Single abstraction (e.g. `AIService` interface) with implementations for OpenAI or other providers.
-  - Inputs: user profile summary, scenario summary, affordability result.
-  - Outputs: natural-language explanation, trade-off summary, suggested adjustments (e.g. “increase down payment to drop PMI”).
-  - All provider-specific logic (prompts, API shape) lives inside this module; API layer only passes structured data.
+- `explain_affordability()` – narrative and suggestions
+- Uses `housing + other_needs` vs 50% needs budget (no logical inconsistency)
 
-### 3.4 API Layer
+### 4.4 API Layer
 
-- **Routers**: Grouped by domain — e.g. `api/calc`, `api/profile`, `api/ai`.
-- **Schemas**: Pydantic models for every request and response; shared where possible (e.g. `LoanTerms`, `AffordabilityResult`).
-- **OpenAPI**: Auto-generated from FastAPI; Swagger UI in dev for discovery and testing.
-- **No business logic in route handlers**: Handlers validate input, call domain modules, and return schema instances.
+- `/api/calc/piti`, `/api/calc/amortization`
+- `/api/profile/affordability`, `/api/profile/scenarios`
+- `/api/ai/explain`
+- Pydantic schemas; OpenAPI at `/docs`
 
 ---
 
-## 4. API Design Principles
+## 5. Data Flow: "Can I Afford This Home?"
 
-- **REST**: Resource-oriented URLs; GET for reads, POST for calculations and scenario creation/updates.
-- **Type safety**: Request/response bodies and path/query params are Pydantic models; same concepts can drive TypeScript types (e.g. generated from OpenAPI).
-- **Idempotency**: Calculation endpoints are pure functions of input; idempotent where appropriate (e.g. GET for a scenario by id).
-- **Errors**: Consistent error payload (e.g. `detail`, `code`); 4xx/5xx used correctly; validation errors from Pydantic exposed in a stable shape.
-
----
-
-## 5. Frontend Architecture
-
-- **Framework**: Next.js (App Router), React, TypeScript.
-- **Routes**: High-level flows — onboarding, scenario builder, affordability dashboard, amortization explorer, AI insights.
-- **State**: Server state from REST stored in React state or a small data layer; minimal global client state.
-- **API usage**: Dedicated `lib` modules that call FastAPI; types aligned with backend schemas (OpenAPI codegen or hand-maintained contracts).
-- **UI**: Feature-oriented components (ScenarioBuilder, AffordabilityDashboard, AmortizationExplorer) that map to backend domains.
+1. User enters inputs in **ScenarioBuilder** (raw string state).
+2. On "Calculate", frontend parses and validates; if valid, calls `calculateAffordabilitySummary(scenario)`.
+3. UI renders **Monthly housing cost**, **50/30/20 budget**, **Amortization** from `result`.
+4. Frontend optionally calls `POST /api/ai/explain` with affordability data; renders **AI summary**.
+5. All outputs are consistent (single source of truth).
 
 ---
 
-## 6. Data Flow (Example: “Can I afford this home?”)
+## 6. Deployment
 
-1. User enters income, expenses, target home price, down payment, rate, term, HOA, etc. in the **Scenario Builder**.
-2. Frontend sends a **POST** to something like `/api/calc/affordability` (or `/api/profile/scenarios` with embedded loan params) with a single payload.
-3. Backend:
-   - **calculation_engine**: Computes PITI, PMI, HOA, maintenance → total monthly housing cost.
-   - **profile_modeling**: Applies 50/30/20 to income; compares housing cost to 50% needs bucket; returns affordability flag and breakdown.
-4. Optionally, frontend calls **/api/ai/explain** with scenario id; **ai_services** returns a short narrative and suggestions.
-5. Frontend renders **Affordability Dashboard** and **Amortization Explorer** (and optional AI block) from these responses.
+- **Docker Compose**: Postgres, backend (9001), frontend (9002)
+- **Local dev**: Backend with SQLite on 9001, frontend on 9002; no Docker required
 
 ---
 
-## 7. Deployment & Docker
-
-- **Containers**: One image for frontend (Node build + serve), one for backend (Python + FastAPI), one for PostgreSQL (official image).
-- **Compose**: Single `docker-compose.yml` for local dev: all three services; backend and frontend point at each other and at DB via env.
-- **Production**: Same images can be used; Compose or an orchestrator (e.g. Kubernetes) runs them; OpenAPI docs exposed via backend URL (e.g. `/docs`).
-
----
-
-## 8. Design Decisions Summary
-
-| Decision | Rationale |
-|----------|-----------|
-| Monorepo | Single repo for frontend, backend, and infra; shared docs and versioning. |
-| Domain separation in backend | Clear boundaries (calc vs profile vs AI) improve testability and future scaling (e.g. splitting services later). |
-| Calculation engine as pure logic | Deterministic, easy to unit test and to reuse from jobs or other entrypoints. |
-| Pydantic + OpenAPI | Type-safe APIs and auto-generated docs; enables shared types with frontend. |
-| PostgreSQL | Structured persistence for users and scenarios; calculation results can be cached or stored as needed. |
-| Dockerized services | Reproducible local and production runs; aligns with “production-ready” goal. |
-
----
-
-*Last updated: 2026. For product overview and tech stack, see [README](../README.md).*
+*For design system (colors, typography, components), see [DESIGN.md](DESIGN.md).*

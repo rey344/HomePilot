@@ -1,121 +1,124 @@
-# HomePilot – AI-Assisted Homebuying & Financial Planning Platform (2026)
+# HomePilot – AI-Assisted Homebuying & Financial Planning
 
-HomePilot is a full-stack, AI-assisted homebuying and financial planning platform designed to help users understand the **true cost of homeownership** and make decisions aligned with the **50/30/20 budgeting framework**.
-
-The platform combines a modern Next.js/TypeScript frontend, a modular FastAPI backend, and PostgreSQL persistence, all packaged as a production-ready, Dockerized monorepo.
+HomePilot is a full-stack, AI-assisted homebuying and financial planning platform. It helps users understand the **true cost of homeownership** and make decisions aligned with the **50/30/20 budgeting framework**.
 
 ## Tech Stack
 
-- **Frontend**: Next.js, React, TypeScript
-- **Backend**: FastAPI (Python), modular domain-driven design
-- **Database**: PostgreSQL
-- **APIs**: REST APIs with typed request/response schemas
-- **Infrastructure**: Docker (services + local dev), Docker Compose
-- **AI Integration**: Pluggable AI services layer for guidance, scenario exploration, and narrative explanations
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS v4, Inter font |
+| **Backend** | FastAPI (Python), modular domain-driven design |
+| **Database** | PostgreSQL (Docker) or SQLite (local dev) |
+| **APIs** | REST with typed Pydantic schemas, OpenAPI/Swagger |
+| **Infrastructure** | Docker Compose (optional); runs without Docker |
 
-## Core Capabilities
+## Core Features
 
-- **True Homeownership Cost Engine**
-  - Calculates PITI (Principal, Interest, Taxes, Insurance)
-  - Incorporates **HOA**, **PMI**, and **ongoing maintenance** assumptions
-  - Handles variable inputs such as down payment, term length, interest rate, property tax rate, and insurance assumptions
+- **True Homeownership Cost** – PITI + PMI + HOA + maintenance
+- **50/30/20 Affordability** – Needs (50%), Wants (30%), Savings (20%); housing + other needs vs budget
+- **Mortgage Amortization** – Schedules with PMI (drops at 80% LTV), pagination, balance chart
+- **AI Summary** – Narrative explanations and suggestions via `/api/ai/explain`
+- **Validation** – Strict input validation (down payment < home value, positive rates/income/term); no coercion; clear error messages
+- **ScenarioBuilder** – Raw string inputs, single compute pipeline, housing % color feedback (≤40% green, 40–50% amber, >50% red)
 
-- **Budgeting & Affordability Analysis**
-  - Compares homeownership costs against user income and expenses using the **50/30/20 framework**
-  - Flags scenarios where housing costs crowd out needs/wants/savings allocations
-  - Supports multiple scenarios (e.g., different purchase prices, interest rates, or down payment levels)
+## Project Structure
 
-- **Mortgage Amortization Engine**
-  - Configurable loan terms (e.g., 15/20/30-year fixed, adjustable variants)
-  - **Credit-score-based PMI estimation** via rule-based tables and extensible logic
-  - Amortization schedules with per-period breakdown (principal/interest/remaining balance)
-  - Hooks for additional modeling (extra payments, lump-sum prepayments, rate changes)
+```
+HomePilot/
+├── frontend/           # Next.js app
+│   ├── src/
+│   │   ├── app/        # Pages, layout, globals.css
+│   │   ├── components/ # ScenarioBuilder, ui (Card, Button, Input)
+│   │   ├── domain/     # Pure mortgage/budget calculations (single source of truth)
+│   │   ├── lib/        # API client, validate
+│   │   └── e2e/        # Playwright tests
+│   └── package.json
+├── backend/            # FastAPI app
+│   ├── app/
+│   │   ├── api/        # /api/calc, /api/profile, /api/ai
+│   │   ├── calculation_engine/
+│   │   ├── profile_modeling/
+│   │   ├── ai_services/
+│   │   ├── db/
+│   │   └── schemas/
+│   └── tests/
+├── infrastructure/
+│   └── docker-compose.yml
+└── docs/
+    ├── ARCHITECTURE.md
+    └── DESIGN.md
+```
 
-- **AI-Assisted Planning**
-  - AI-guided narratives explaining affordability, trade-offs, and risk factors
-  - Suggestions for adjusting inputs (e.g., down payment, term, price range) to fit 50/30/20
-  - Extensible integration point for LLMs or external AI services
+## Running the Project
 
-## Backend Architecture (FastAPI)
+### Option 1: Run without Docker (recommended)
 
-The backend is structured with **clear domain separation** and type-safe boundaries:
+No Docker required. Backend uses SQLite in memory.
 
-- **`calculation_engine`**
-  - Core financial calculations: PITI, PMI, HOA, maintenance estimates, amortization schedules
-  - Deterministic, unit-test-focused module with minimal external dependencies
+**Terminal 1 – backend**
 
-- **`profile_modeling`**
-  - User income, expense, and savings profiles
-  - Affordability classification under 50/30/20
-  - Scenario management (e.g., multiple homes, multiple loan configurations)
+```bash
+cd backend
+pip install -r requirements.txt   # first time only
+DATABASE_URL=sqlite:///:memory: uvicorn app.main:app --reload --port 9001
+```
 
-- **`ai_services`**
-  - Abstraction layer over AI providers (e.g., OpenAI, local models)
-  - Prompts and response shaping for explanations, coaching, and recommendations
-  - Isolation of model-specific concerns from business logic
+**Terminal 2 – frontend**
 
-- **API Layer**
-  - FastAPI routers grouped by domain (e.g., `/api/calc`, `/api/profile`, `/api/ai`)
-  - Pydantic models for **type-safe request/response schemas**
-  - OpenAPI/Swagger for **self-documenting, discoverable REST APIs**
+```bash
+cd frontend
+npm install   # first time only
+npm run dev
+```
 
-## Frontend Architecture (Next.js + TypeScript)
+Open **[http://localhost:9002](http://localhost:9002)** (app) and [http://localhost:9001/docs](http://localhost:9001/docs) (API docs).
 
-- **Pages & Routing**
-  - High-level routes for onboarding, scenario setup, results dashboards, and AI-guided insights
+### Option 2: Run with Docker Compose
 
-- **Feature Modules**
-  - **Scenario Builder**: capture user profile, target home parameters, and constraints
-  - **Affordability Dashboard**: visualize PITI+HOA+PMI+maintenance vs 50/30/20 allocations
-  - **Amortization Explorer**: interactive charts and tables for payment schedules
-
-- **Type Safety & API Integration**
-  - Shared TypeScript types aligned with backend schemas (e.g., via OpenAPI-generated types or shared contracts)
-  - API client modules encapsulating calls to FastAPI endpoints
-
-## Monorepo & Infrastructure
-
-HomePilot is **architected as a production-ready monorepo**:
-
-- **Service Layout**
-  - `frontend/` – Next.js + TypeScript application
-  - `backend/` – FastAPI application, domain modules, and tests
-  - `infrastructure/` – Docker, Docker Compose, and environment configuration
-
-- **Dockerization**
-  - Separate Docker images for frontend, backend, and database
-  - Multi-stage builds for lean production images
-  - Local development using Docker Compose (frontend, backend, Postgres, and optional AI proxies)
-
-- **API Documentation**
-  - OpenAPI spec auto-generated from FastAPI routes
-  - Swagger UI available in development for interactive exploration of endpoints
-
-## Running the project
-
-**With Docker Compose** (Postgres + backend + frontend):
+From the repo root:
 
 ```bash
 docker compose -f infrastructure/docker-compose.yml up --build -d
 ```
 
-Then open [http://localhost:9002](http://localhost:9002) (frontend) and [http://localhost:9001/docs](http://localhost:9001/docs) (API docs).
+Then open [http://localhost:9002](http://localhost:9002) and [http://localhost:9001/docs](http://localhost:9001/docs).
 
-**Local dev without Postgres** (backend with SQLite, frontend separately):
+**If Docker shows "Internal Server Error" or "API route and version" errors:** that's a Docker Desktop/daemon issue. Restart or update Docker Desktop, or use Option 1.
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/calc/piti` | Monthly housing cost (PITI + PMI + HOA + maintenance) |
+| POST | `/api/calc/amortization` | Amortization schedule (optional `max_months`) |
+| POST | `/api/profile/affordability` | 50/30/20 affordability check |
+| POST | `/api/ai/explain` | AI narrative and suggestions |
+| GET | `/health` | Health check |
+
+## Tests
+
+**Backend**
 
 ```bash
-# Terminal 1 – backend
-cd backend && DATABASE_URL=sqlite:///:memory: PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload --port 8000
-
-# Terminal 2 – frontend
-cd frontend && npm run dev
+cd backend
+pytest tests/ -v
 ```
 
-Set `NEXT_PUBLIC_API_URL=http://localhost:8000` in `frontend/.env.local` if needed.
+**Frontend (Vitest)**
 
-## Next Steps
+```bash
+cd frontend
+npm run test
+```
 
-- Implement initial domain models and calculation utilities in the `calculation_engine`.
-- Define Pydantic schemas and FastAPI routers for core calculation and affordability endpoints.
-- Wire up the frontend scenario builder and dashboards to the REST API.
-- Add AI provider integration for narrative explanations and scenario recommendations.
+**E2E (Playwright)**
+
+```bash
+cd frontend
+npx playwright test
+```
+
+## Documentation
+
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** – System overview, domain modules, API design, data flow
+- **[docs/DESIGN.md](docs/DESIGN.md)** – Design system, colors, typography, components
