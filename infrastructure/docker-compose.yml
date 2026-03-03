@@ -1,5 +1,5 @@
 # HomePilot – local dev / demo: backend, frontend, Postgres
-# Run from repo root: docker compose -f infrastructure/docker-compose.yml up --build
+# Run from repo root: docker compose -f infrastructure/docker-compose.yml up --build -d
 
 services:
   postgres:
@@ -23,7 +23,7 @@ services:
     environment:
       DATABASE_URL: postgresql://homepilot:homepilot@postgres:5432/homepilot
     ports:
-      - "8000:8000"
+      - "9001:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -33,8 +33,8 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_API_URL: http://localhost:9001
     ports:
-      - "3000:3000"
+      - "9002:3000"
     depends_on:
       - backend
