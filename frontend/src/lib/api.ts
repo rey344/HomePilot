@@ -63,6 +63,7 @@ export interface ExplainResponse {
 export async function fetchExplain(
   monthlyIncome: number,
   monthlyHousing: number,
+  otherNeeds: number,
   isAffordable: boolean,
   housingPctOfIncome: number,
   needsBudget50: number,
@@ -74,6 +75,7 @@ export async function fetchExplain(
     body: JSON.stringify({
       monthly_income: monthlyIncome,
       monthly_housing: monthlyHousing,
+      other_needs: otherNeeds,
       is_affordable: isAffordable,
       housing_pct_of_income: housingPctOfIncome,
       needs_budget_50: needsBudget50,
