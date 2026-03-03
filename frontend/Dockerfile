@@ -3,7 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+# Use npm install so build works when lock file is out of sync (e.g. after adding @playwright/test).
+# Run `npm install` locally and commit package-lock.json for reproducible builds, then switch to: RUN npm ci
+RUN npm install
 COPY . .
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
