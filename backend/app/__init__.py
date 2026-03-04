@@ -1,1 +1,0 @@
-# HomePilot backend application

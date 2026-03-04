@@ -1,7 +1,19 @@
 const getBase = () =>
   typeof window !== "undefined"
-    ? (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000")
-    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    ? (process.env.NEXT_PUBLIC_API_URL || "http://localhost:9001")
+    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:9001";
+
+const DEFAULT_TIMEOUT = 30000; // 30 seconds
+
+// Fetch with timeout
+function fetchWithTimeout(url: string, options: RequestInit, timeout = DEFAULT_TIMEOUT): Promise<Response> {
+  return Promise.race([
+    fetch(url, options),
+    new Promise<Response>((_, reject) =>
+      setTimeout(() => reject(new Error('Request timeout')), timeout)
+    ),
+  ]);
+}
 
 export interface LoanTerms {
   name?: string;
@@ -67,9 +79,11 @@ export async function fetchExplain(
   isAffordable: boolean,
   housingPctOfIncome: number,
   needsBudget50: number,
-  remainingNeedsAfterHousing: number
+  remainingNeedsAfterHousing: number,
+  pmiMonthly: number = 0,
+  termYears: number = 30
 ): Promise<ExplainResponse> {
-  const res = await fetch(`${getBase()}/api/ai/explain`, {
+  const res = await fetchWithTimeout(`${getBase()}/api/ai/explain`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -80,6 +94,8 @@ export async function fetchExplain(
       housing_pct_of_income: housingPctOfIncome,
       needs_budget_50: needsBudget50,
       remaining_needs_after_housing: remainingNeedsAfterHousing,
+      pmi_monthly: pmiMonthly,
+      term_years: termYears,
     }),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -93,7 +109,7 @@ function num(v: unknown): number {
 }
 
 export async function fetchPiti(terms: LoanTerms): Promise<PitiResponse> {
-  const res = await fetch(`${getBase()}/api/calc/piti`, {
+  const res = await fetchWithTimeout(`${getBase()}/api/calc/piti`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -127,7 +143,7 @@ export async function fetchAffordability(
   monthlyIncome: number,
   otherNeeds: number = 0
 ): Promise<AffordabilityResponse> {
-  const res = await fetch(`${getBase()}/api/profile/affordability`, {
+  const res = await fetchWithTimeout(`${getBase()}/api/profile/affordability`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -153,7 +169,7 @@ export async function fetchAffordability(
 }
 
 export async function fetchAmortization(terms: LoanTerms, maxMonths = 120): Promise<AmortizationResponse> {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `${getBase()}/api/calc/amortization?max_months=${maxMonths}`,
     {
       method: "POST",

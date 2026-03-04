@@ -42,7 +42,7 @@ export function calculateAffordability(
   const savings_20 = roundToCents(monthlyTakeHomeIncome * 0.2);
   const totalNeedsUsed = roundToCents(monthlyHousingCost + otherMonthlyNeeds);
   const remainingNeeds = roundToCents(needs_50 - totalNeedsUsed);
-  const housingPct = roundToCents((monthlyHousingCost / monthlyTakeHomeIncome) * 100);
+  const housingPct = Math.round((monthlyHousingCost / monthlyTakeHomeIncome) * 1000) / 10; // 1 decimal precision for percentages
   const fits = totalNeedsUsed <= needs_50;
 
   return {

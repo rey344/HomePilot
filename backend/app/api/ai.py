@@ -21,5 +21,7 @@ def post_explain(req: ExplainRequest) -> ExplainResponse:
         housing_pct_of_income=req.housing_pct_of_income,
         needs_budget_50=req.needs_budget_50,
         remaining_needs_after_housing=req.remaining_needs_after_housing,
+        pmi_monthly=req.pmi_monthly,
+        term_years=req.term_years,
     )
     return ExplainResponse(narrative=result.narrative, suggestions=result.suggestions)

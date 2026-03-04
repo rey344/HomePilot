@@ -48,7 +48,7 @@ def affordability_503020(
 
     total_needs_used = monthly_housing_cost + other_monthly_needs
     remaining_needs = (needs_50 - total_needs_used).quantize(Decimal("0.01"))
-    housing_pct = (monthly_housing_cost / monthly_take_home_income * 100).quantize(Decimal("0.01"))
+    housing_pct = (monthly_housing_cost / monthly_take_home_income * 100).quantize(Decimal("0.1"))
 
     fits = total_needs_used <= needs_50
     if fits:

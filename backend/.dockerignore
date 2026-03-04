@@ -1,9 +1,0 @@
-# Exclude from build context; Dockerfile is always included
-.venv
-venv
-__pycache__
-*.pyc
-.pytest_cache
-.coverage
-.env
-*.md

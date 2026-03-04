@@ -37,7 +37,7 @@ def compute_piti(req: LoanTermsRequest) -> PitiResponse:
     pmi = monthly_pmi(loan_amount, req.home_value)
     maintenance = (req.home_value * req.maintenance_monthly_pct / 100 / 12).quantize(Decimal("0.01"))
 
-    total = piti_total + pmi + req.hoa_monthly + maintenance
+    total = (piti_total + pmi + req.hoa_monthly + maintenance).quantize(Decimal("0.01"))
 
     return PitiResponse(
         principal_and_interest=p_i,

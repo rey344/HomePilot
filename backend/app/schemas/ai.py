@@ -11,6 +11,8 @@ class ExplainRequest(BaseModel):
     housing_pct_of_income: float = Field(..., ge=0)
     needs_budget_50: float = Field(..., ge=0)
     remaining_needs_after_housing: float = Field(...)
+    pmi_monthly: float = Field(default=0, ge=0)
+    term_years: int = Field(default=30, gt=0)
 
 
 class ExplainResponse(BaseModel):

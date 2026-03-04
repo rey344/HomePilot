@@ -175,7 +175,12 @@ export default function ScenarioBuilder() {
       termYears: (() => {
         const n = Number(parsed.termYears);
         if (!Number.isFinite(n)) return NaN;
-        return Math.max(1, Math.min(30, Math.floor(n)));
+        const clamped = Math.max(1, Math.min(30, Math.floor(n)));
+        // Warn user if term was clamped
+        if (clamped !== n && Number.isFinite(n)) {
+          setError(`Term adjusted to ${clamped} years (valid range: 1-30 years).`);
+        }
+        return clamped;
       })(),
     };
     const scenarioValidation = validateScenario(scenario);
@@ -203,7 +208,9 @@ export default function ScenarioBuilder() {
       computed.affordability.is_affordable,
       computed.affordability.housing_pct_of_income,
       computed.affordability.needs_budget_50,
-      computed.affordability.remaining_needs_after_housing
+      computed.affordability.remaining_needs_after_housing,
+      computed.piti.pmiMonthly,
+      scenario.termYears
     )
       .then(setExplain)
       .catch((err) => setError(parseApiError(err)))
