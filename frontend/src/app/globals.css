@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+/*
+  Fintech-style dark theme. Professional, calm, production-ready.
+  No decorative noise. Subtle gradient depth only.
+*/
+:root {
+  /* Base */
+  --color-bg-app: #0b0f19;
+  --color-surface-card: #111827;
+  --color-surface-input: #0f172a;
+
+  /* Border */
+  --color-border: rgba(255, 255, 255, 0.08);
+
+  /* Primary accent — electric cyan */
+  --color-primary: #00c9ff;
+  --color-primary-hover: #00b4e6;
+
+  /* Text */
+  --color-text-primary: #e5e7eb;
+  --color-text-muted: #9ca3af;
+
+  /* Semantic */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  /* Progress: Wants bar */
+  --color-wants: #60a5fa;
+
+  /* Aliases for components */
+  --color-primary-500: var(--color-primary);
+  --color-primary-600: var(--color-primary-hover);
+  --color-primary-700: #0099cc;
+  --color-primary-fg: #ffffff;
+  --color-text-secondary: #d1d5db;
+  --color-border-subtle: var(--color-border);
+  --primary-light: rgba(0, 201, 255, 0.08);
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --danger-bg: rgba(239, 68, 68, 0.1);
+
+  /* Spacing scale (8px base) */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+
+  /* Shape */
+  --radius: 14px;
+  --radius-input: 10px;
+
+  /* Elevation */
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+}
+
+body {
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Subtle professional gradient depth (no particles/glow) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(0, 201, 255, 0.15), transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(0, 201, 255, 0.08), transparent 50%),
+    #0b0f19;
+}
+
+/* Focus — accent outline */
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

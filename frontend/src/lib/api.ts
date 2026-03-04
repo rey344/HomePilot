@@ -72,6 +72,43 @@ export interface ExplainResponse {
   suggestions: string[];
 }
 
+export interface PropertyListing {
+  property_id: string;
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  price: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  sqft?: number;
+  lot_size?: number;
+  year_built?: number;
+  property_type?: string;
+  listing_url?: string;
+  image_url?: string;
+  description?: string;
+}
+
+export interface AffordabilityIndicator {
+  status: string;
+  monthly_payment: number;
+  housing_pct_of_income: number;
+  is_affordable: boolean;
+  message: string;
+}
+
+export interface ListingWithAffordability {
+  listing: PropertyListing;
+  affordability: AffordabilityIndicator;
+}
+
+export interface RealEstateSearchResponse {
+  listings: ListingWithAffordability[];
+  total_found: number;
+  search_location: string;
+}
+
 export async function fetchExplain(
   monthlyIncome: number,
   monthlyHousing: number,
@@ -163,9 +200,72 @@ export async function fetchAffordability(
     monthly_housing: num(data.monthly_housing),
     other_needs: num(data.other_needs),
     remaining_needs_after_housing: num(data.remaining_needs_after_housing),
-    housing_pct_of_income: num(data.housing_pct_of_income),
-    is_affordable: Boolean(data.is_affordable),
-  };
+
+export async function searchRealEstate(
+  location: string,
+  maxPrice: number,
+  minPrice?: number,
+  bedrooms?: number,
+  bathrooms?: number,
+  limit: number = 20
+): Promise<RealEstateSearchResponse> {
+  const res = await fetchWithTimeout(`${getBase()}/api/v1/real-estate/search`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location,
+      max_price: maxPrice,
+      min_price: minPrice,
+      bedrooms,
+      bathrooms,
+      limit,
+    }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function searchRealEstateWithProfile(
+  location: string,
+  maxPrice: number,
+  monthlyIncome: number,
+  annualIncome: number,
+  downPaymentPct: number = 20.0,
+  interestRate: number = 6.5,
+  termYears: number = 30,
+  propertyTaxRate: number = 1.2,
+  insuranceAnnual: number = 1200.0,
+  hoaMonthly: number = 0.0,
+  minPrice?: number,
+  bedrooms?: number,
+  bathrooms?: number,
+  limit: number = 20
+): Promise<RealEstateSearchResponse> {
+  const res = await fetchWithTimeout(
+    `${getBase()}/api/v1/real-estate/search-with-profile?` +
+      `monthly_income=${monthlyIncome}&` +
+      `annual_income=${annualIncome}&` +
+      `down_payment_pct=${downPaymentPct}&` +
+      `interest_rate=${interestRate}&` +
+      `term_years=${termYears}&` +
+      `property_tax_rate=${propertyTaxRate}&` +
+      `insurance_annual=${insuranceAnnual}&` +
+      `hoa_monthly=${hoaMonthly}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location,
+        max_price: maxPrice,
+        min_price: minPrice,
+        bedrooms,
+        bathrooms,
+        limit,
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
 export async function fetchAmortization(terms: LoanTerms, maxMonths = 120): Promise<AmortizationResponse> {

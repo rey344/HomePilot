@@ -1,0 +1,59 @@
+# HomePilot – local dev / demo: backend, frontend, Postgres
+# Run from repo root: docker compose -f infrastructure/docker-compose.yml up --build -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-homepilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-homepilot}
+      POSTGRES_DB: ${POSTGRES_DB:-homepilot}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-homepilot} -d ${POSTGRES_DB:-homepilot}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-homepilot}:${POSTGRES_PASSWORD:-homepilot}@postgres:5432/${POSTGRES_DB:-homepilot}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:9002}
+    ports:
+      - "9001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:9001}
+    ports:
+      - "9002:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:

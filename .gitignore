@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pnp
+.pnp.js
+
+# Build / output
+.next/
+out/
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+
+# Logs / debug
+*.log
+npm-debug.log*
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker
+.docker/
+
+# Misc
+*.md.backup
