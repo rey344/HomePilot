@@ -16,11 +16,16 @@ build/
 *.egg-info/
 .eggs/
 
-# Environment
+# Environment & Secrets (NEVER COMMIT THESE)
 .env
 .env.local
 .env.*.local
 *.env
+infrastructure/.env
+secrets/
+*.pem
+*.key
+*.p12
 
 # IDE / OS
 .idea/

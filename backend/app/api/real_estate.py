@@ -22,8 +22,12 @@ async def search_listings(req: RealEstateSearchRequest) -> RealEstateSearchRespo
     For now, we'll use default values. In production, this would come from
     the authenticated user's profile.
     """
-    # TODO: Get these from authenticated user profile
-    # For demo, use reasonable defaults
+    # TODO (Future Enhancement - Authentication Required):
+    # Replace demo defaults with authenticated user's profile data:
+    # 1. Add JWT/session authentication to endpoints
+    # 2. Retrieve user profile from database (monthly_income, down_payment_pct, etc.)
+    # 3. Use /api/v1/real-estate/search-with-profile endpoint for custom parameters
+    # For demo: use reasonable defaults
     monthly_income = req.max_price * 0.005  # Rule of thumb: home price ~200x monthly income
     annual_income = monthly_income * 12
     down_payment_pct = 20.0

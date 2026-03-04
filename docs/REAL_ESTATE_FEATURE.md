@@ -202,7 +202,7 @@ The system uses HomePilot's proven calculation engine:
 
 ## Future Enhancements
 
-- [ ] User authentication & saved searches
+- [ ] **User authentication & personalized profiles**: Replace demo defaults with authenticated user's financial profile (monthly income, down payment %, etc.) - see TODO in `app/api/real_estate.py`
 - [ ] Favorite/save listings functionality
 - [ ] Email alerts for new listings
 - [ ] Map view integration

@@ -2,6 +2,15 @@
 
 HomePilot is a full-stack homebuying and financial planning platform. It helps users understand the **true cost of homeownership** and make decisions aligned with the **50/30/20 budgeting framework**.
 
+## 🚀 Live Demo
+
+> **Coming Soon**: Deployed on Vercel + Railway
+
+<!-- Uncomment after deployment and replace with your actual URLs:
+- **App**: [https://your-app-name.vercel.app](https://your-app-name.vercel.app)
+- **API Docs**: [https://your-backend.up.railway.app/docs](https://your-backend.up.railway.app/docs)
+-->
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -11,7 +20,7 @@ HomePilot is a full-stack homebuying and financial planning platform. It helps u
 | **Database** | PostgreSQL (Docker) or SQLite (local dev) |
 | **APIs** | REST with typed Pydantic schemas, OpenAPI/Swagger, API versioning |
 | **Infrastructure** | Docker Compose (optional); runs without Docker |
-| **Security** | Rate limiting (100 req/min), input sanitization, health checks |
+| **Security** | Rate limiting (100 req/min), secret scanning (Gitleaks), pre-commit hooks, fail-fast config validation |
 
 ## Core Features
 
@@ -57,9 +66,23 @@ HomePilot/
 From the repo root:
 
 ```bash
+# Quick setup with helper script (generates secure password automatically)
+./infrastructure/setup-local-env.sh
+
+# Start all services
+docker compose -f infrastructure/docker-compose.yml up --build -d
+```
+
+**OR manually:**
+
+```bash
 # Copy and configure environment variables
 cp infrastructure/.env.example infrastructure/.env
-# Edit .env with your settings (change passwords for production!)
+
+# ⚠️  SECURITY: Edit .env and set secure passwords
+# Generate strong password: openssl rand -base64 32
+# Replace CHANGE_ME_REQUIRED with your generated password
+nano infrastructure/.env  # or use your preferred editor
 
 # Start all services
 docker compose -f infrastructure/docker-compose.yml up --build -d
@@ -72,6 +95,7 @@ Then open [http://localhost:9002](http://localhost:9002) (app) and [http://local
 - ✅ Health checks for all services
 - ✅ PostgreSQL with persistent data volume
 - ✅ Production-ready configuration
+- 🔒 Secure secret management (no hardcoded passwords)
 
 ### Option 2: Run without Docker
 
@@ -113,31 +137,63 @@ Open **[http://localhost:9002](http://localhost:9002)** (app) and [http://localh
 
 - 🔒 **Rate Limiting**: 100 requests/minute per IP
 - 🛡️ **Input Sanitization**: XSS protection on all user inputs
-- 🔐 **Environment Variables**: Secure credential management
+- 🔐 **Secret Management**: Zero hardcoded credentials, fail-fast validation
+- 🔍 **Secret Scanning**: Pre-commit hooks (Gitleaks) + GitHub Actions (Gitleaks + TruffleHog)
 - 📊 **Logging**: Comprehensive request/response logging
 - 💉 **SQL Injection Protection**: Parameterized queries via SQLAlchemy
 - ❤️ **Health Checks**: Database connectivity monitoring
 - 🚫 **Pagination Limits**: Max 100 scenarios per query
+- 🔑 **Environment-based Config**: All secrets from env vars or .env files (never committed)
+
+**See [SECURITY.md](SECURITY.md) for comprehensive security documentation.**
 
 ## Production Deployment
 
+**📦 Deploy to production in minutes!**
+
+See the comprehensive [**Deployment Guide**](docs/DEPLOYMENT.md) for step-by-step instructions to deploy:
+- **Frontend**: Vercel (recommended)
+- **Backend**: Railway or Render
+- **Database**: Railway PostgreSQL, Neon, or Supabase
+
+**Quick Start Deployment:**
+1. Push code to GitHub
+2. Connect Railway to your repo (backend + database)
+3. Connect Vercel to your repo (frontend)
+4. Set environment variables
+5. Done! ✅
+
 ### Environment Variables
 
-Required environment variables (set in `.env` or container environment):
+**⚠️ SECURITY NOTICE:** All secrets are **REQUIRED** (no insecure defaults). The app will refuse to start if `DATABASE_URL` is missing.
+
+Required variables (set in `infrastructure/.env` or container environment):
 
 ```bash
-# Database (CHANGE PASSWORD!)
+# Database credentials - GENERATE STRONG PASSWORDS
+# Use: openssl rand -base64 32
 POSTGRES_USER=homepilot
-POSTGRES_PASSWORD=your_secure_password_here
+POSTGRES_PASSWORD=<GENERATE_STRONG_PASSWORD>
 POSTGRES_DB=homepilot
-DATABASE_URL=postgresql://user:pass@host:5432/db
+DATABASE_URL=postgresql://homepilot:<PASSWORD>@postgres:5432/homepilot
 
-# CORS (comma-separated origins)
+# CORS (comma-separated origins - NO wildcards in production)
 CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 
 # Frontend API URL
 NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+
+# Optional: RapidAPI for real estate listings (uses mock data if not set)
+RAPIDAPI_KEY=<your_key_or_leave_empty>
 ```
+
+**Production Deployment:**
+- Use your platform's secret manager (Railway Secrets, Vercel Environment Variables)
+- Never commit `.env` files (they are gitignored)
+- Different credentials for dev/staging/production
+- Rotate secrets every 90 days
+
+See [SECURITY.md](SECURITY.md) for detailed secret management guide.
 
 ### Docker Compose Commands
 
@@ -183,12 +239,34 @@ npm run test:e2e
 
 ## Contributing
 
+**Security First:** Install pre-commit hooks before making changes to prevent accidental secret commits.
+
+```bash
+# Install pre-commit hooks (one-time setup)
+pip install pre-commit
+pre-commit install
+
+# The hooks will now run automatically on git commit
+# To run manually: pre-commit run --all-files
+```
+
+Contribution workflow:
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Run tests (`pytest` in backend, `npm test` in frontend)
-4. Commit changes (`git commit -m 'Add amazing feature'`)
-5. Push to branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+3. Install pre-commit hooks (see above)
+4. Make your changes
+5. Run tests (`pytest` in backend, `npm test` in frontend)
+6. Commit changes (pre-commit hooks will scan for secrets automatically)
+7. Push to branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
+
+**Pre-commit hooks will:**
+- ✅ Scan for hardcoded secrets (Gitleaks)
+- ✅ Detect private keys
+- ✅ Check YAML syntax
+- ✅ Lint Python code (Ruff)
+- ✅ Lint TypeScript/JavaScript (ESLint)
 
 ## Tests
 

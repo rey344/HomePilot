@@ -120,7 +120,7 @@ export async function fetchExplain(
   pmiMonthly: number = 0,
   termYears: number = 30
 ): Promise<ExplainResponse> {
-  const res = await fetchWithTimeout(`${getBase()}/api/ai/explain`, {
+  const res = await fetchWithTimeout(`${getBase()}/api/v1/ai/explain`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -146,7 +146,7 @@ function num(v: unknown): number {
 }
 
 export async function fetchPiti(terms: LoanTerms): Promise<PitiResponse> {
-  const res = await fetchWithTimeout(`${getBase()}/api/calc/piti`, {
+  const res = await fetchWithTimeout(`${getBase()}/api/v1/calc/piti`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -180,7 +180,7 @@ export async function fetchAffordability(
   monthlyIncome: number,
   otherNeeds: number = 0
 ): Promise<AffordabilityResponse> {
-  const res = await fetchWithTimeout(`${getBase()}/api/profile/affordability`, {
+  const res = await fetchWithTimeout(`${getBase()}/api/v1/profile/affordability`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -270,7 +270,7 @@ export async function searchRealEstateWithProfile(
 
 export async function fetchAmortization(terms: LoanTerms, maxMonths = 120): Promise<AmortizationResponse> {
   const res = await fetchWithTimeout(
-    `${getBase()}/api/calc/amortization?max_months=${maxMonths}`,
+    `${getBase()}/api/v1/calc/amortization?max_months=${maxMonths}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

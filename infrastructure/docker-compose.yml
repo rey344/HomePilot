@@ -1,19 +1,23 @@
 # HomePilot – local dev / demo: backend, frontend, Postgres
 # Run from repo root: docker compose -f infrastructure/docker-compose.yml up --build -d
+# SECURITY: Copy .env.example to .env and set all required secrets before running
 
 services:
   postgres:
     image: postgres:16-alpine
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-homepilot}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-homepilot}
-      POSTGRES_DB: ${POSTGRES_DB:-homepilot}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      # Bind to localhost only for security
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-homepilot} -d ${POSTGRES_DB:-homepilot}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 3s
       timeout: 3s
       retries: 5
@@ -22,9 +26,12 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-homepilot}:${POSTGRES_PASSWORD:-homepilot}@postgres:5432/${POSTGRES_DB:-homepilot}
+      DATABASE_URL: ${DATABASE_URL}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:9002}
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY:-}
     ports:
       - "9001:8000"
     depends_on:
