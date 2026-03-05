@@ -1,4 +1,4 @@
-"""AI API – explanations and coaching."""
+"""AI API – explanations and coaching with real LLM integration."""
 from fastapi import APIRouter
 
 from app.ai_services.explain import explain_affordability
@@ -10,8 +10,12 @@ router = APIRouter()
 @router.post("/explain", response_model=ExplainResponse)
 def post_explain(req: ExplainRequest) -> ExplainResponse:
     """
-    Get a short narrative and suggestions for the given affordability result.
-    Uses a stub implementation; can be wired to an LLM provider via env.
+    Get AI-generated narrative and suggestions for affordability result.
+    
+    Uses real AI providers (OpenAI, Groq, Anthropic) if configured,
+    with automatic fallback to rule-based mock responses.
+    
+    Set GROQ_API_KEY or OPENAI_API_KEY environment variable to enable AI.
     """
     result = explain_affordability(
         monthly_income=req.monthly_income,
@@ -24,4 +28,11 @@ def post_explain(req: ExplainRequest) -> ExplainResponse:
         pmi_monthly=req.pmi_monthly,
         term_years=req.term_years,
     )
-    return ExplainResponse(narrative=result.narrative, suggestions=result.suggestions)
+    return ExplainResponse(
+        narrative=result.narrative,
+        suggestions=result.suggestions,
+        provider=result.provider,
+        model=result.model,
+        tokens_used=result.tokens_used,
+    )
+

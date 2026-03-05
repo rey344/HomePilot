@@ -16,5 +16,10 @@ class ExplainRequest(BaseModel):
 
 
 class ExplainResponse(BaseModel):
+    """AI-generated explanation with provider metadata."""
     narrative: str
     suggestions: list[str]
+    provider: str = "mock"  # "openai", "groq", "anthropic", or "mock"
+    model: str = "rule-based"  # Specific model used
+    tokens_used: int = 0  # For cost tracking and monitoring
+

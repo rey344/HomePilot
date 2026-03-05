@@ -200,6 +200,11 @@ export async function fetchAffordability(
     monthly_housing: num(data.monthly_housing),
     other_needs: num(data.other_needs),
     remaining_needs_after_housing: num(data.remaining_needs_after_housing),
+    housing_pct_of_income: num(data.housing_pct_of_income),
+    is_affordable: Boolean(data.is_affordable),
+    message: String((data as any).message ?? ""),
+  };
+}
 
 export async function searchRealEstate(
   location: string,

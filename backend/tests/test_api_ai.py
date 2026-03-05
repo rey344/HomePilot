@@ -23,8 +23,13 @@ def test_explain_endpoint_affordable():
     data = resp.json()
     assert "narrative" in data
     assert "suggestions" in data
+    assert "provider" in data
+    assert "model" in data
+    assert "tokens_used" in data
     assert isinstance(data["suggestions"], list)
     assert len(data["suggestions"]) >= 1
+    # Should use mock provider in tests (no API keys set)
+    assert data["provider"] in ["mock", "openai", "groq", "anthropic"]
 
 
 def test_explain_endpoint_not_affordable():
@@ -43,4 +48,5 @@ def test_explain_endpoint_not_affordable():
     assert resp.status_code == 200
     data = resp.json()
     assert "narrative" in data
+    assert "provider" in data
     assert any("down payment" in s.lower() for s in data["suggestions"])

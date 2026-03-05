@@ -27,7 +27,7 @@ HomePilot is a full-stack homebuying and financial planning platform. It helps u
 - **True Homeownership Cost** – PITI + PMI + HOA + maintenance
 - **50/30/20 Affordability** – Needs (50%), Wants (30%), Savings (20%); housing + other needs vs budget
 - **Mortgage Amortization** – Schedules with PMI (drops at 80% LTV), pagination, balance chart
-- **AI Summary** – Narrative explanations and suggestions via `/api/ai/explain`
+- **AI Financial Advisor** – Real LLM integration (OpenAI, Groq, Anthropic) for personalized advice via `/api/ai/explain`
 - **Validation** – Strict input validation (down payment < home value, positive rates/income/term); no coercion; clear error messages
 - **ScenarioBuilder** – Raw string inputs, single compute pipeline, housing % color feedback (≤40% green, 40–50% amber, >50% red)
 
@@ -233,7 +233,7 @@ npm run test:e2e
 ## Known Limitations
 
 - **Authentication**: Not implemented. Add OAuth2/JWT before production use.
-- **AI Service**: Currently returns mock responses. Integrate actual LLM provider.
+- **AI Service**: Requires API key for real AI (Groq/OpenAI/Anthropic). Falls back to rule-based responses. See [AI Integration Guide](docs/AI_INTEGRATION.md).
 - **Caching**: No Redis/CDN caching implemented yet.
 - **File Storage**: No document upload/storage capabilities.
 
@@ -295,3 +295,5 @@ npx playwright test
 
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** – System overview, domain modules, API design, data flow
 - **[docs/DESIGN.md](docs/DESIGN.md)** – Design system, colors, typography, components
+- **[docs/AI_INTEGRATION.md](docs/AI_INTEGRATION.md)** – AI provider setup guide (Groq, OpenAI, Anthropic)
+- **[SECURITY.md](SECURITY.md)** – Security best practices and secret management

@@ -17,6 +17,17 @@ class Settings(BaseSettings):
     max_scenarios_per_query: int = 100
     rapidapi_key: str = ""
     
+    # AI Provider Configuration
+    # Set OPENAI_API_KEY or GROQ_API_KEY to enable real AI
+    # Leave empty to use rule-based mock responses
+    openai_api_key: str = ""
+    groq_api_key: str = ""
+    anthropic_api_key: str = ""
+    ai_provider: str = "auto"  # "auto", "groq", "openai", "anthropic", "mock"
+    ai_model: str = "auto"  # Provider-specific model or "auto" for defaults
+    ai_temperature: float = 0.7  # 0.0-1.0, lower = more deterministic
+    ai_max_tokens: int = 500  # Max tokens in AI response
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
