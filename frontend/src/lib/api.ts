@@ -98,6 +98,131 @@ export interface AffordabilityIndicator {
   message: string;
 }
 
+export interface HomeRecommendationRequest {
+  monthly_gross_income: number;
+  monthly_debt_payments?: number;
+  down_payment_pct?: number;
+  interest_rate?: number;
+  term_years?: number;
+  property_tax_rate?: number;
+  insurance_pct?: number;
+  hoa_monthly?: number;
+}
+
+export interface HomeRecommendationResponse {
+  recommended_price: number;
+  maximum_price: number;
+  safe_min_price: number;
+  safe_max_price: number;
+  monthly_payment_at_recommended: number;
+  monthly_payment_at_maximum: number;
+  assumptions: {
+    interest_rate_pct: number;
+    down_payment_pct: number;
+    term_years: number;
+    property_tax_pct: number;
+    insurance_pct: number;
+    hoa_monthly: number;
+  };
+}
+
+export interface RiskIndicator {
+  level: string;
+  message: string;
+  value: number;
+  threshold: number;
+}
+
+export interface RiskAnalysis {
+  overall_risk: string;
+  indicators: RiskIndicator[];
+  warnings: string[];
+  strengths: string[];
+}
+
+export interface YearProjection {
+  year: number;
+  home_value: number;
+  loan_balance: number;
+  equity: number;
+  cumulative_interest_paid: number;
+  cumulative_principal_paid: number;
+}
+
+export interface FiveYearProjection {
+  initial_home_value: number;
+  projected_home_value: number;
+  home_value_increase: number;
+  home_value_increase_pct: number;
+  initial_loan_balance: number;
+  projected_loan_balance: number;
+  principal_paid: number;
+  initial_equity: number;
+  projected_equity: number;
+  equity_increase: number;
+  total_interest_paid: number;
+  total_payments: number;
+  net_worth_change: number;
+  annual_appreciation_rate: number;
+  yearly_details: YearProjection[];
+}
+
+export interface CostBreakdown {
+  principal_and_interest: number;
+  property_tax: number;
+  insurance: number;
+  pmi: number;
+  hoa: number;
+  maintenance: number;
+  total: number;
+}
+
+export interface EnhancedLoanAnalysisResponse {
+  cost_breakdown: CostBreakdown;
+  risk_analysis: RiskAnalysis;
+  five_year_projection: FiveYearProjection;
+  affordability: {
+    monthly_income: number;
+    needs_budget_50: number;
+    wants_budget_30: number;
+    savings_budget_20: number;
+    monthly_housing: number;
+    other_needs: number;
+    remaining_needs_after_housing: number;
+    housing_pct_of_income: number;
+    is_affordable: boolean;
+    message: string;
+  };
+}
+
+export interface HomeRecommendationRequest {
+  monthly_gross_income: number;
+  monthly_debt_payments?: number;
+  down_payment_pct?: number;
+  interest_rate?: number;
+  term_years?: number;
+  property_tax_rate?: number;
+  insurance_pct?: number;
+  hoa_monthly?: number;
+}
+
+export interface HomeRecommendationResponse {
+  recommended_price: number;
+  maximum_price: number;
+  safe_min_price: number;
+  safe_max_price: number;
+  monthly_payment_at_recommended: number;
+  monthly_payment_at_maximum: number;
+  assumptions: {
+    interest_rate_pct: number;
+    down_payment_pct: number;
+    term_years: number;
+    property_tax_pct: number;
+    insurance_pct: number;
+    hoa_monthly: number;
+  };
+}
+
 export interface ListingWithAffordability {
   listing: PropertyListing;
   affordability: AffordabilityIndicator;
@@ -206,6 +331,36 @@ export async function fetchAffordability(
   };
 }
 
+export async function fetchHomeRecommendation(
+  request: HomeRecommendationRequest
+): Promise<HomeRecommendationResponse> {
+  const res = await fetchWithTimeout(`${getBase()}/api/v1/profile/recommend-home-price`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      monthly_gross_income: request.monthly_gross_income,
+      monthly_debt_payments: request.monthly_debt_payments ?? 0,
+      down_payment_pct: request.down_payment_pct ?? 20,
+      interest_rate: request.interest_rate ?? 6.5,
+      term_years: request.term_years ?? 30,
+      property_tax_rate: request.property_tax_rate ?? 1.2,
+      insurance_pct: request.insurance_pct ?? 0.35,
+      hoa_monthly: request.hoa_monthly ?? 0,
+    }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  return {
+    recommended_price: num(data.recommended_price),
+    maximum_price: num(data.maximum_price),
+    safe_min_price: num(data.safe_min_price),
+    safe_max_price: num(data.safe_max_price),
+    monthly_payment_at_recommended: num(data.monthly_payment_at_recommended),
+    monthly_payment_at_maximum: num(data.monthly_payment_at_maximum),
+    assumptions: data.assumptions,
+  };
+}
+
 export async function searchRealEstate(
   location: string,
   maxPrice: number,
@@ -304,4 +459,44 @@ export async function fetchAmortization(terms: LoanTerms, maxMonths = 120): Prom
       balance: num(r.balance),
     })),
   };
+}
+
+export interface EnhancedLoanAnalysisRequest {
+  home_value: number;
+  down_payment: number;
+  annual_rate_pct: number;
+  term_years: number;
+  annual_property_tax_pct: number;
+  annual_insurance_pct: number;
+  hoa_monthly?: number;
+  maintenance_monthly_pct?: number;
+  monthly_gross_income: number;
+  monthly_take_home_income: number;
+  monthly_debt_payments?: number;
+  other_monthly_needs?: number;
+}
+
+export async function fetchEnhancedLoanAnalysis(
+  request: EnhancedLoanAnalysisRequest
+): Promise<EnhancedLoanAnalysisResponse> {
+  const res = await fetchWithTimeout(`${getBase()}/api/v1/calc/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      home_value: request.home_value,
+      down_payment: request.down_payment,
+      annual_rate_pct: request.annual_rate_pct,
+      term_years: request.term_years,
+      annual_property_tax_pct: request.annual_property_tax_pct,
+      annual_insurance_pct: request.annual_insurance_pct,
+      hoa_monthly: request.hoa_monthly ?? 0,
+      maintenance_monthly_pct: request.maintenance_monthly_pct ?? 0.1,
+      monthly_gross_income: request.monthly_gross_income,
+      monthly_take_home_income: request.monthly_take_home_income,
+      monthly_debt_payments: request.monthly_debt_payments ?? 0,
+      other_monthly_needs: request.other_monthly_needs ?? 0,
+    }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
