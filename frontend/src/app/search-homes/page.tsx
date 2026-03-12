@@ -1,35 +1,20 @@
 import { RealEstateSearch } from "@/components/RealEstateSearch";
-import Link from "next/link";
 
 export default function SearchHomesPage() {
   return (
-    <div>
-      <div className="bg-blue-600 text-white p-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl font-bold">HomePilot</h1>
-          <nav className="flex gap-4">
-            <Link href="/" className="hover:underline">
-              Calculator
-            </Link>
-            <Link href="/search-homes" className="hover:underline">
-              Search Homes
-            </Link>
-          </nav>
+    <main className="min-h-screen py-8" style={{ backgroundColor: "var(--color-surface)" }}>
+      <div className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-[var(--color-text-primary)]">
+            Search Homes
+          </h1>
+          <p className="text-[15px] text-[var(--color-text-muted)]">
+            Search for homes and see instant affordability analysis (Safe, Stretch, Over budget) based on your budget.
+          </p>
         </div>
+
+        <RealEstateSearch />
       </div>
-      
-      <main className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">Real Estate Search</h1>
-            <p className="text-gray-600">
-              Search for homes and see instant affordability analysis based on your budget.
-            </p>
-          </div>
-          
-          <RealEstateSearch />
-        </div>
-      </main>
-    </div>
+    </main>
   );
 }
