@@ -28,6 +28,8 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 const ROWS_PER_PAGE = 60;
+/** Take-home to gross: we use gross = takeHome / 0.77 (≈23% effective tax). Same factor for API and display. */
+const GROSS_FROM_TAKEHOME = 1 / 0.77;
 
 /** Raw string state for inputs — no coercion; allows empty and typing. */
 type InputValues = Record<keyof Scenario, string>;
@@ -191,8 +193,7 @@ export default function ScenarioBuilder() {
     const income = parseFloat(inputValues.monthlyTakeHomeIncome);
     if (income > 0) {
       setLoadingRecommendation(true);
-      // Assume gross income is ~1.3x take-home (rough estimate)
-      const grossIncome = income * 1.3;
+      const grossIncome = income * GROSS_FROM_TAKEHOME;
       fetchHomeRecommendation({
         monthly_gross_income: grossIncome,
       })
@@ -309,7 +310,7 @@ export default function ScenarioBuilder() {
       annual_insurance_pct: scenario.annualInsurancePercent,
       hoa_monthly: scenario.hoaMonthly,
       maintenance_monthly_pct: scenario.annualMaintenancePercent / 12, // Convert annual % to monthly
-      monthly_gross_income: scenario.monthlyTakeHomeIncome * 1.3, // Estimate gross income
+      monthly_gross_income: scenario.monthlyTakeHomeIncome * GROSS_FROM_TAKEHOME,
       monthly_take_home_income: scenario.monthlyTakeHomeIncome,
       other_monthly_needs: scenario.otherMonthlyNeeds,
     })
@@ -399,41 +400,51 @@ export default function ScenarioBuilder() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <Input
                     label="Home value ($)"
-                    type="text"
-                    inputMode="decimal"
+                    type="number"
+                    min={0}
+                    step={1000}
                     value={inputValues.homeValue}
                     onChange={(e) => setInputValues((v) => ({ ...v, homeValue: e.target.value }))}
                     onBlur={() => handleBlur("homeValue")}
                     error={fieldErrors?.homeValue}
+                    aria-label="Home value in dollars"
                   />
                   <Input
                     label="Down payment ($)"
-                    type="text"
-                    inputMode="decimal"
+                    type="number"
+                    min={0}
+                    step={1000}
                     value={inputValues.downPayment}
                     onChange={(e) => setInputValues((v) => ({ ...v, downPayment: e.target.value }))}
                     onBlur={() => handleBlur("downPayment")}
                     error={fieldErrors?.downPayment}
+                    aria-label="Down payment in dollars"
                   />
                   <Input
                     label="Interest rate (%)"
-                    type="text"
-                    inputMode="decimal"
+                    type="number"
+                    min={0}
+                    max={30}
+                    step={0.125}
                     value={inputValues.annualRatePercent}
                     onChange={(e) =>
                       setInputValues((v) => ({ ...v, annualRatePercent: e.target.value }))
                     }
                     onBlur={() => handleBlur("annualRatePercent")}
                     error={fieldErrors?.annualRatePercent}
+                    aria-label="Annual interest rate percent"
                   />
                   <Input
                     label="Term (years)"
-                    type="text"
-                    inputMode="numeric"
+                    type="number"
+                    min={1}
+                    max={30}
+                    step={1}
                     value={inputValues.termYears}
                     onChange={(e) => setInputValues((v) => ({ ...v, termYears: e.target.value }))}
                     onBlur={() => handleBlur("termYears")}
                     error={fieldErrors?.termYears}
+                    aria-label="Loan term in years"
                   />
                 </div>
               </section>
@@ -447,50 +458,61 @@ export default function ScenarioBuilder() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <Input
                     label={
-                      <Tooltip content="Typically 0.5-2.5% of home value per year" position="top">
-                        <span>Property tax (%/year) ℹ️</span>
+                      <Tooltip content="Typically 0.5-2.5% of home value per year" position="top" id="tooltip-property-tax">
+                        <span>Property tax (%/year)</span>
                       </Tooltip>
                     }
-                    type="text"
-                    inputMode="decimal"
+                    type="number"
+                    min={0}
+                    max={10}
+                    step={0.1}
                     value={inputValues.annualPropertyTaxPercent}
                     onChange={(e) =>
                       setInputValues((v) => ({ ...v, annualPropertyTaxPercent: e.target.value }))
                     }
                     onBlur={() => handleBlur("annualPropertyTaxPercent")}
+                    aria-label="Property tax percent per year (typically 0.5-2.5%)"
                   />
                   <Input
                     label={
-                      <Tooltip content="Usually 0.3-0.5% of home value per year" position="top">
-                        <span>Insurance (%/year) ℹ️</span>
+                      <Tooltip content="Usually 0.3-0.5% of home value per year" position="top" id="tooltip-insurance">
+                        <span>Insurance (%/year)</span>
                       </Tooltip>
                     }
-                    type="text"
-                    inputMode="decimal"
+                    type="number"
+                    min={0}
+                    max={5}
+                    step={0.05}
                     value={inputValues.annualInsurancePercent}
                     onChange={(e) =>
                       setInputValues((v) => ({ ...v, annualInsurancePercent: e.target.value }))
                     }
                     onBlur={() => handleBlur("annualInsurancePercent")}
+                    aria-label="Insurance percent per year (usually 0.3-0.5%)"
                   />
                   <Input
                     label="HOA ($/month)"
-                    type="text"
-                    inputMode="decimal"
+                    type="number"
+                    min={0}
+                    step={10}
                     value={inputValues.hoaMonthly}
                     onFocus={() => clearZeroOnFocus("hoaMonthly")}
                     onChange={(e) => setInputValues((v) => ({ ...v, hoaMonthly: e.target.value }))}
                     onBlur={() => handleBlur("hoaMonthly")}
+                    aria-label="HOA fee in dollars per month"
                   />
                   <Input
                     label="Maintenance (%/year)"
-                    type="text"
-                    inputMode="decimal"
+                    type="number"
+                    min={0}
+                    max={5}
+                    step={0.1}
                     value={inputValues.annualMaintenancePercent}
                     onChange={(e) =>
                       setInputValues((v) => ({ ...v, annualMaintenancePercent: e.target.value }))
                     }
                     onBlur={() => handleBlur("annualMaintenancePercent")}
+                    aria-label="Maintenance reserve percent of home value per year"
                   />
                 </div>
               </section>
@@ -504,33 +526,37 @@ export default function ScenarioBuilder() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Input
                     label={
-                      <Tooltip content="Your net income after taxes. We'll estimate gross income as ~1.3x this amount for DTI calculations." position="top">
-                        <span>Monthly net income ($) ℹ️</span>
+                      <Tooltip content="Your net income after taxes. We estimate gross income as take-home ÷ 0.77 (≈23% effective tax) for the recommended price range." position="top" id="tooltip-net-income">
+                        <span>Monthly net income ($)</span>
                       </Tooltip>
                     }
-                    type="text"
-                    inputMode="decimal"
+                    type="number"
+                    min={0}
+                    step={100}
                     value={inputValues.monthlyTakeHomeIncome}
                     onChange={(e) =>
                       setInputValues((v) => ({ ...v, monthlyTakeHomeIncome: e.target.value }))
                     }
                     onBlur={() => handleBlur("monthlyTakeHomeIncome")}
                     error={fieldErrors?.monthlyTakeHomeIncome}
+                    aria-label="Monthly net (take-home) income in dollars"
                   />
                   <Input
                     label={
-                      <Tooltip content="Groceries, utilities, car payment, insurance, debt payments, etc." position="top">
-                        <span>Other monthly needs ($) ℹ️</span>
+                      <Tooltip content="Groceries, utilities, car payment, insurance, debt payments, etc." position="top" id="tooltip-other-needs">
+                        <span>Other monthly needs ($)</span>
                       </Tooltip>
                     }
-                    type="text"
-                    inputMode="decimal"
+                    type="number"
+                    min={0}
+                    step={50}
                     value={inputValues.otherMonthlyNeeds}
                     onChange={(e) =>
                       setInputValues((v) => ({ ...v, otherMonthlyNeeds: e.target.value }))
                     }
                     onBlur={() => handleBlur("otherMonthlyNeeds")}
                     error={fieldErrors?.otherMonthlyNeeds}
+                    aria-label="Other monthly needs in dollars"
                   />
                 </div>
               </section>
@@ -583,10 +609,10 @@ export default function ScenarioBuilder() {
           {homeRecommendation && (
             <Card>
               <CardHeader>
-                <CardTitle>💰 Recommended Home Price Range</CardTitle>
+                <CardTitle>Recommended Home Price Range</CardTitle>
                 <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-                  Based on estimated gross income of {formatCurrency(parseFloat(inputValues.monthlyTakeHomeIncome) * 1.3 * 12)}/year 
-                  <span className="text-xs block mt-1">(Assuming ~30% tax rate on gross income)</span>
+                  Estimated gross income: {formatCurrency(parseFloat(inputValues.monthlyTakeHomeIncome || "0") * GROSS_FROM_TAKEHOME * 12)}/year
+                  <span className="text-xs block mt-1">(Take-home ÷ 0.77 ≈ 23% effective tax. Recommended price is 28% of that gross.)</span>
                 </p>
               </CardHeader>
               <div className="space-y-4">
@@ -596,14 +622,14 @@ export default function ScenarioBuilder() {
                     <p className="mt-1 text-2xl font-bold text-[var(--color-success)]">
                       {formatCurrency(homeRecommendation.recommended_price)}
                     </p>
-                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">28% of gross income</p>
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">28% of estimated gross income</p>
                   </div>
                   <div className="rounded-lg border p-4" style={{ borderColor: "var(--color-border)" }}>
                     <p className="text-sm text-[var(--color-text-muted)]">Maximum Price</p>
                     <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)]">
                       {formatCurrency(homeRecommendation.maximum_price)}
                     </p>
-                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">35% of gross income</p>
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">35% of estimated gross income</p>
                   </div>
                 </div>
                 <div className="rounded-lg border p-4" style={{ borderColor: "var(--color-border)", backgroundColor: "var(--primary-light)" }}>
@@ -612,7 +638,7 @@ export default function ScenarioBuilder() {
                     {formatCurrency(homeRecommendation.safe_min_price)} – {formatCurrency(homeRecommendation.safe_max_price)}
                   </p>
                   <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                    This range keeps housing costs between 25-30% of income for financial flexibility
+                    Keeps housing costs between 25–30% of income for financial flexibility.
                   </p>
                 </div>
               </div>
