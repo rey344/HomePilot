@@ -10,11 +10,12 @@ from app.ai_services.providers import get_ai_provider, AIResponse
 
 @dataclass
 class ExplainResult:
+    summary: str  # One-line takeaway
     narrative: str
     suggestions: list[str]
-    provider: str = "mock"  # Which AI provider was used
-    model: str = "rule-based"  # Which model was used
-    tokens_used: int = 0  # For cost tracking
+    provider: str = "mock"
+    model: str = "rule-based"
+    tokens_used: int = 0
 
 
 def _build_prompt(
@@ -27,53 +28,55 @@ def _build_prompt(
     remaining_needs_after_housing: float,
     pmi_monthly: float = 0,
     term_years: int = 30,
+    risk_summary: str | None = None,
+    projection_summary: str | None = None,
 ) -> str:
-    """Build a structured prompt for the AI."""
-    prompt = f"""Analyze this homebuying scenario and provide clear financial guidance:
+    """Build a structured prompt for the AI with benchmarks and optional risk/projection."""
+    total_needs = monthly_housing + other_needs
+    prompt = f"""You are a sharp financial advisor. Analyze this homebuying scenario using standard benchmarks.
 
-**Income & Budget:**
-- Monthly take-home income: ${monthly_income:,.2f}
-- 50/30/20 rule: 50% needs budget = ${needs_budget_50:,.2f}
+**Benchmarks to reference when relevant:**
+- Front-end DTI (housing / gross): lenders prefer ≤28%, max often 35%.
+- 50/30/20: 50% needs, 30% wants, 20% savings. Housing belongs in the 50% needs bucket.
+- Emergency fund: 3–6 months of expenses; tight remaining-needs budget is a risk.
 
-**Housing Costs:**
-- Monthly housing payment (PITI + HOA): ${monthly_housing:,.2f}
-- Housing as % of income: {housing_pct_of_income:.1f}%
-- PMI included: ${pmi_monthly:,.2f}/month
-- Mortgage term: {term_years} years
+**Their numbers:**
+- Monthly take-home: ${monthly_income:,.2f} → 50% needs budget = ${needs_budget_50:,.2f}
+- Monthly housing (PITI + HOA + maintenance): ${monthly_housing:,.2f} ({housing_pct_of_income:.1f}% of take-home)
+- Other monthly needs: ${other_needs:,.2f}
+- Total needs used: ${total_needs:,.2f}; remaining in needs bucket: ${remaining_needs_after_housing:,.2f}
+- PMI: ${pmi_monthly:,.2f}/month | Term: {term_years} years
+- 50/30/20 affordable: {"Yes" if is_affordable else "No"}
 
-**Other Monthly Needs:**
-- Other essential expenses: ${other_needs:,.2f}
-- Total needs (housing + other): ${monthly_housing + other_needs:,.2f}
-- Remaining needs budget after housing: ${remaining_needs_after_housing:,.2f}
+"""
+    if risk_summary:
+        prompt += f"**Risk analysis (use this):**\n{risk_summary}\n\n"
+    if projection_summary:
+        prompt += f"**5-year projection (use if relevant):**\n{projection_summary}\n\n"
 
-**Affordability:**
-- Is affordable under 50/30/20 rule: {"✅ YES" if is_affordable else "❌ NO"}
+    prompt += """**Your task — keep output structured and easy to read:**
 
-**Your Task:**
-1. Write a 2-3 sentence narrative explaining whether this scenario is financially sound.
-2. Provide 2-4 specific, actionable suggestions to improve their situation.
+1. **summary** (one short sentence): The main takeaway, e.g. "This scenario is affordable but leaves little buffer" or "Housing cost is over the recommended limit."
+2. **narrative** (2–3 short paragraphs): Use exactly two newlines (\\n\\n) between paragraphs. First paragraph: is it sound or stretched? Reference one benchmark (DTI, 50/30/20, or remaining needs). Second paragraph (optional): one concrete point from risk or 5-year projection if provided.
+3. **suggestions**: Array of 3–4 clear action items. Start each with a verb, e.g. "Increase down payment to…", "Aim for a home price under…". One item per array element.
 
-Return your response as JSON with this exact structure:
-{{
-  "narrative": "Your 2-3 sentence explanation here",
-  "suggestions": [
-    "First specific suggestion",
-    "Second specific suggestion",
-    "Third suggestion (if applicable)"
-  ]
-}}
-
-Focus on practical financial advice. Be encouraging but realistic."""
-    
+Return valid JSON only (no markdown, no code fence):
+{
+  "summary": "One sentence takeaway.",
+  "narrative": "First paragraph here.\\n\\nSecond paragraph if needed.",
+  "suggestions": ["First action.", "Second action.", "Third action."]
+}"""
     return prompt
 
 
-def _parse_ai_response(content: str) -> tuple[str, list[str]]:
-    """Parse AI response, handling both JSON and plain text formats."""
+def _parse_ai_response(content: str) -> tuple[str, str, list[str]]:
+    """Parse AI response; returns (summary, narrative, suggestions)."""
     try:
-        # Try to parse as JSON first
         data = json.loads(content)
-        return data.get("narrative", ""), data.get("suggestions", [])
+        summary = data.get("summary") or ""
+        narrative = data.get("narrative") or ""
+        suggestions = data.get("suggestions") or []
+        return summary, narrative, suggestions
     except json.JSONDecodeError:
         # Fallback: split by newlines and parse manually
         lines = [line.strip() for line in content.split('\n') if line.strip()]
@@ -95,7 +98,7 @@ def _parse_ai_response(content: str) -> tuple[str, list[str]]:
             elif not narrative and len(line) > 50:
                 narrative = line
         
-        return narrative, suggestions
+        return "", narrative, suggestions
 
 
 def _generate_rule_based_response(
@@ -149,7 +152,9 @@ def _generate_rule_based_response(
         
         suggestions.append("Look for ways to reduce other needs (utilities, insurance, subscriptions) to stay within 50%.")
     
+    summary = "Your scenario fits the 50/30/20 needs budget." if is_affordable else "Housing and needs exceed the 50% budget."
     return ExplainResult(
+        summary=summary,
         narrative=narrative,
         suggestions=suggestions,
         provider="mock",
@@ -168,6 +173,8 @@ def explain_affordability(
     remaining_needs_after_housing: float,
     pmi_monthly: float = 0,
     term_years: int = 30,
+    risk_summary: str | None = None,
+    projection_summary: str | None = None,
 ) -> ExplainResult:
     """
     Produce a short narrative and suggestions based on 50/30/20 result.
@@ -190,7 +197,9 @@ def explain_affordability(
         prompt = _build_prompt(
             monthly_income, monthly_housing, other_needs, is_affordable,
             housing_pct_of_income, needs_budget_50, remaining_needs_after_housing,
-            pmi_monthly, term_years
+            pmi_monthly, term_years,
+            risk_summary=risk_summary,
+            projection_summary=projection_summary,
         )
         
         ai_response: AIResponse = provider.generate(
@@ -199,10 +208,7 @@ def explain_affordability(
             max_tokens=settings.ai_max_tokens,
         )
         
-        # Parse response
-        narrative, suggestions = _parse_ai_response(ai_response.content)
-        
-        # Validate we got useful output
+        summary, narrative, suggestions = _parse_ai_response(ai_response.content)
         if not narrative or not suggestions:
             print("⚠️  AI returned incomplete response, falling back to rule-based")
             return _generate_rule_based_response(
@@ -210,8 +216,8 @@ def explain_affordability(
                 housing_pct_of_income, needs_budget_50, remaining_needs_after_housing,
                 pmi_monthly, term_years
             )
-        
         return ExplainResult(
+            summary=summary or "See analysis below.",
             narrative=narrative,
             suggestions=suggestions,
             provider=ai_response.provider,

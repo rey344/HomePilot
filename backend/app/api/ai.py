@@ -1,8 +1,14 @@
-"""AI API – explanations and coaching with real LLM integration."""
+"""AI API – explanations, coaching, and scenario-aware chat with real LLM integration."""
 from fastapi import APIRouter
 
 from app.ai_services.explain import explain_affordability
-from app.schemas.ai import ExplainRequest, ExplainResponse
+from app.ai_services.chat import chat as chat_service
+from app.schemas.ai import (
+    ExplainRequest,
+    ExplainResponse,
+    ChatRequest,
+    ChatResponse,
+)
 
 router = APIRouter()
 
@@ -11,10 +17,7 @@ router = APIRouter()
 def post_explain(req: ExplainRequest) -> ExplainResponse:
     """
     Get AI-generated narrative and suggestions for affordability result.
-    
-    Uses Groq AI if configured, otherwise falls back to rule-based mock responses.
-    
-    Set GROQ_API_KEY environment variable to enable AI.
+    Optionally include risk_summary and projection_summary for richer analysis.
     """
     result = explain_affordability(
         monthly_income=req.monthly_income,
@@ -26,12 +29,24 @@ def post_explain(req: ExplainRequest) -> ExplainResponse:
         remaining_needs_after_housing=req.remaining_needs_after_housing,
         pmi_monthly=req.pmi_monthly,
         term_years=req.term_years,
+        risk_summary=req.risk_summary,
+        projection_summary=req.projection_summary,
     )
     return ExplainResponse(
+        summary=result.summary,
         narrative=result.narrative,
         suggestions=result.suggestions,
         provider=result.provider,
         model=result.model,
         tokens_used=result.tokens_used,
     )
+
+
+@router.post("/chat", response_model=ChatResponse)
+def post_chat(req: ChatRequest) -> ChatResponse:
+    """
+    Scenario-aware chat: ask questions about your numbers, affordability, risk, next steps.
+    The advisor has context (home value, payment, income, risk, 5-year projection).
+    """
+    return chat_service(req.messages, req.scenario_context)
 

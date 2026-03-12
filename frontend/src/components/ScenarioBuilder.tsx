@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   calculateAffordabilitySummary,
   formatCurrency,
@@ -19,6 +19,7 @@ import {
   type ExplainResponse,
   type HomeRecommendationResponse,
   type EnhancedLoanAnalysisResponse,
+  type ScenarioContext,
 } from "@/lib/api";
 import { parseApiError } from "@/lib/validate";
 import { Button } from "@/components/ui/Button";
@@ -26,6 +27,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { ToastContainer } from "@/components/ui/Toast";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { AdvisorChat } from "@/components/AdvisorChat";
 
 const ROWS_PER_PAGE = 60;
 /** Take-home to gross: we use gross = takeHome / 0.77 (≈23% effective tax). Same factor for API and display. */
@@ -111,6 +113,14 @@ function BarSegment({
 }
 
 function BalanceChart({ schedule }: { schedule: AmortizationRow[] }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [hovered, setHovered] = useState<{
+    row: AmortizationRow;
+    index: number;
+    x: number;
+    y: number;
+  } | null>(null);
+
   if (schedule.length < 2) return null;
   const maxBalance = Math.max(...schedule.map((r) => r.balance));
   const minBalance = Math.min(...schedule.map((r) => r.balance));
@@ -124,12 +134,42 @@ function BalanceChart({ schedule }: { schedule: AmortizationRow[] }) {
       return `${x},${y}`;
     })
     .join(" ");
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const viewX = ((e.clientX - rect.left) / rect.width) * w;
+    const index = Math.round((viewX / w) * (schedule.length - 1));
+    const clamped = Math.max(0, Math.min(index, schedule.length - 1));
+    const row = schedule[clamped];
+    setHovered({
+      row,
+      index: clamped,
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
+  const handleMouseLeave = () => setHovered(null);
+
+  const hoveredX = hovered
+    ? (hovered.index / (schedule.length - 1)) * w
+    : null;
+  const hoveredY =
+    hovered && range
+      ? h - ((hovered.row.balance - minBalance) / range) * (h - 8) - 4
+      : null;
+
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto relative">
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${w} ${h}`}
-        className="min-h-[120px] w-full"
-        aria-label="Remaining balance over time"
+        className="min-h-[120px] w-full cursor-crosshair"
+        aria-label="Remaining balance over time. Hover for month details."
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
       >
         <polyline
           fill="none"
@@ -138,7 +178,40 @@ function BalanceChart({ schedule }: { schedule: AmortizationRow[] }) {
           strokeLinejoin="round"
           points={pts}
         />
+        {hovered && hoveredX != null && hoveredY != null && (
+          <circle
+            cx={hoveredX}
+            cy={hoveredY}
+            r="5"
+            fill="var(--color-primary)"
+            stroke="var(--color-surface)"
+            strokeWidth="2"
+            aria-hidden
+          />
+        )}
       </svg>
+      {hovered && (
+        <div
+          className="pointer-events-none fixed z-50 px-3 py-2 text-xs rounded-lg shadow-lg border whitespace-nowrap"
+          style={{
+            left: hovered.x + 12,
+            top: hovered.y + 8,
+            backgroundColor: "var(--color-surface)",
+            borderColor: "var(--color-border)",
+            color: "var(--color-text-primary)",
+          }}
+          role="tooltip"
+        >
+          <div className="font-medium">
+            Month {hovered.row.month}
+          </div>
+          <div className="mt-1 space-y-0.5 text-[var(--color-text-muted)]">
+            <div>Balance: {formatCurrency(hovered.row.balance)}</div>
+            <div>Principal: {formatCurrency(hovered.row.principal)}</div>
+            <div>Interest: {formatCurrency(hovered.row.interest)}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -165,6 +238,7 @@ export default function ScenarioBuilder() {
   const [savedScenarios, setSavedScenarios] = useState<Array<{ name: string; scenario: Scenario }>>([]);
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: "success" | "error" | "info" }>>([]);
   const [downPaymentMode, setDownPaymentMode] = useState<"dollar" | "percent">("dollar");
+  const [chatOpen, setChatOpen] = useState(false);
 
   // Toast helper functions
   const addToast = (message: string, type: "success" | "error" | "info" = "success") => {
@@ -301,6 +375,7 @@ export default function ScenarioBuilder() {
 
     // Fetch enhanced analysis with risk indicators and projections
     setLoadingAnalysis(true);
+    setLoadingExplain(true);
     fetchEnhancedLoanAnalysis({
       home_value: scenario.homeValue,
       down_payment: scenario.downPayment,
@@ -309,30 +384,44 @@ export default function ScenarioBuilder() {
       annual_property_tax_pct: scenario.annualPropertyTaxPercent,
       annual_insurance_pct: scenario.annualInsurancePercent,
       hoa_monthly: scenario.hoaMonthly,
-      maintenance_monthly_pct: scenario.annualMaintenancePercent / 12, // Convert annual % to monthly
+      maintenance_monthly_pct: scenario.annualMaintenancePercent / 12,
       monthly_gross_income: scenario.monthlyTakeHomeIncome * GROSS_FROM_TAKEHOME,
       monthly_take_home_income: scenario.monthlyTakeHomeIncome,
       other_monthly_needs: scenario.otherMonthlyNeeds,
     })
-      .then(setEnhancedAnalysis)
-      .catch((err) => console.error("Failed to fetch enhanced analysis:", err))
-      .finally(() => setLoadingAnalysis(false));
-
-    setLoadingExplain(true);
-    fetchExplain(
-      computed.affordability.monthly_income,
-      computed.affordability.monthly_housing,
-      computed.affordability.other_needs,
-      computed.affordability.is_affordable,
-      computed.affordability.housing_pct_of_income,
-      computed.affordability.needs_budget_50,
-      computed.affordability.remaining_needs_after_housing,
-      computed.piti.pmiMonthly,
-      scenario.termYears
-    )
+      .then((enhanced) => {
+        setEnhancedAnalysis(enhanced);
+        const riskSummary = [
+          `Overall risk: ${enhanced.risk_analysis.overall_risk}.`,
+          ...enhanced.risk_analysis.indicators.map((i) => i.message),
+          ...enhanced.risk_analysis.warnings,
+          ...enhanced.risk_analysis.strengths,
+        ].join(" ");
+        const proj = enhanced.five_year_projection;
+        const projectionSummary = `In 5 years: home value ~${formatCurrency(proj.projected_home_value)}, equity ~${formatCurrency(proj.projected_equity)}, net worth change ${formatCurrency(proj.net_worth_change)}. Total interest paid in 5 yr: ${formatCurrency(proj.total_interest_paid)}.`;
+        return fetchExplain(
+          computed.affordability.monthly_income,
+          computed.affordability.monthly_housing,
+          computed.affordability.other_needs,
+          computed.affordability.is_affordable,
+          computed.affordability.housing_pct_of_income,
+          computed.affordability.needs_budget_50,
+          computed.affordability.remaining_needs_after_housing,
+          computed.piti.pmiMonthly,
+          scenario.termYears,
+          riskSummary,
+          projectionSummary
+        );
+      })
       .then(setExplain)
-      .catch((err) => setError(parseApiError(err)))
-      .finally(() => setLoadingExplain(false));
+      .catch((err) => {
+        setError(parseApiError(err));
+        setExplain(null);
+      })
+      .finally(() => {
+        setLoadingAnalysis(false);
+        setLoadingExplain(false);
+      });
   };
 
   const handleBlur = (field: keyof Scenario) => {
@@ -379,6 +468,29 @@ export default function ScenarioBuilder() {
   const first60 = (amortization?.schedule ?? []).slice(0, 60);
   const interest5yr = first60.reduce((s, r) => s + r.interest, 0);
   const principal5yr = first60.reduce((s, r) => s + r.principal, 0);
+
+  const scenarioContext: ScenarioContext | null =
+    committedScenario && result && affordability && piti
+      ? {
+          home_value: committedScenario.homeValue,
+          down_payment: committedScenario.downPayment,
+          monthly_payment_total: piti.totalMonthly,
+          monthly_income: affordability.monthly_income,
+          is_affordable: affordability.is_affordable,
+          housing_pct_of_income: affordability.housing_pct_of_income,
+          risk_summary: enhancedAnalysis
+            ? [
+                `Overall risk: ${enhancedAnalysis.risk_analysis.overall_risk}.`,
+                ...enhancedAnalysis.risk_analysis.indicators.map((i) => i.message),
+                ...enhancedAnalysis.risk_analysis.warnings,
+                ...enhancedAnalysis.risk_analysis.strengths,
+              ].join(" ")
+            : null,
+          projection_summary: enhancedAnalysis?.five_year_projection
+            ? `In 5 years: home value ~${formatCurrency(enhancedAnalysis.five_year_projection.projected_home_value)}, equity ~${formatCurrency(enhancedAnalysis.five_year_projection.projected_equity)}, net worth change ${formatCurrency(enhancedAnalysis.five_year_projection.net_worth_change)}.`
+            : null,
+        }
+      : null;
 
   return (
     <div className="relative z-10">
@@ -812,20 +924,37 @@ export default function ScenarioBuilder() {
                         <span className="text-[var(--color-primary)]">AI summary</span>
                       </CardTitle>
                     </CardHeader>
-                    <p className="leading-relaxed text-[var(--color-text-secondary)]">{explain.narrative}</p>
-                    {explain.suggestions.length > 0 && (
-                      <ul className="mt-4 space-y-2">
-                        {explain.suggestions.map((s, i) => (
-                          <li
-                            key={i}
-                            className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]"
-                          >
-                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary-500)]" />
-                            {s}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    <div className="space-y-4">
+                      {explain.summary && (
+                        <p className="font-semibold text-[var(--color-text-primary)]">
+                          {explain.summary}
+                        </p>
+                      )}
+                      <div className="text-[var(--color-text-secondary)] leading-relaxed space-y-3">
+                        {explain.narrative
+                          .split(/\n\n+/)
+                          .filter((p) => p.trim())
+                          .map((para, i) => (
+                            <p key={i}>{para.trim()}</p>
+                          ))}
+                      </div>
+                      {explain.suggestions.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-[var(--color-text-primary)] mb-2">Suggested next steps</p>
+                          <ul className="space-y-2">
+                            {explain.suggestions.map((s, i) => (
+                              <li
+                                key={i}
+                                className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]"
+                              >
+                                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary)]" />
+                                {s}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   </Card>
                 )}
                 {loadingExplain && (
@@ -1063,6 +1192,24 @@ export default function ScenarioBuilder() {
         </form>
       </main>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* Advisor chat: floating button + panel */}
+      <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-2">
+        {chatOpen && (
+          <div className="w-[360px] sm:w-[400px]">
+            <AdvisorChat scenarioContext={scenarioContext} onClose={() => setChatOpen(false)} />
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => setChatOpen((o) => !o)}
+          className="flex items-center gap-2 rounded-full px-4 py-3 shadow-lg font-medium text-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)]"
+          style={{ backgroundColor: "var(--color-primary)", color: "white" }}
+          aria-label={chatOpen ? "Close advisor chat" : "Open advisor chat"}
+        >
+          {chatOpen ? "Close" : "Advisor chat"}
+        </button>
+      </div>
     </div>
   );
 }

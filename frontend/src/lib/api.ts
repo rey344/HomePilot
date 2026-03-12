@@ -68,8 +68,40 @@ export interface AmortizationResponse {
 }
 
 export interface ExplainResponse {
+  summary?: string;
   narrative: string;
   suggestions: string[];
+  provider?: string;
+  model?: string;
+  tokens_used?: number;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ScenarioContext {
+  home_value: number;
+  down_payment: number;
+  monthly_payment_total: number;
+  monthly_income: number;
+  is_affordable: boolean;
+  housing_pct_of_income: number;
+  risk_summary?: string | null;
+  projection_summary?: string | null;
+}
+
+export interface ChatRequest {
+  messages: ChatMessage[];
+  scenario_context: ScenarioContext;
+}
+
+export interface ChatResponse {
+  message: ChatMessage;
+  provider: string;
+  model: string;
+  tokens_used: number;
 }
 
 export interface PropertyListing {
@@ -243,21 +275,42 @@ export async function fetchExplain(
   needsBudget50: number,
   remainingNeedsAfterHousing: number,
   pmiMonthly: number = 0,
-  termYears: number = 30
+  termYears: number = 30,
+  riskSummary?: string | null,
+  projectionSummary?: string | null
 ): Promise<ExplainResponse> {
+  const body: Record<string, unknown> = {
+    monthly_income: monthlyIncome,
+    monthly_housing: monthlyHousing,
+    other_needs: otherNeeds,
+    is_affordable: isAffordable,
+    housing_pct_of_income: housingPctOfIncome,
+    needs_budget_50: needsBudget50,
+    remaining_needs_after_housing: remainingNeedsAfterHousing,
+    pmi_monthly: pmiMonthly,
+    term_years: termYears,
+  };
+  if (riskSummary != null) body.risk_summary = riskSummary;
+  if (projectionSummary != null) body.projection_summary = projectionSummary;
   const res = await fetchWithTimeout(`${getBase()}/api/v1/ai/explain`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function fetchChat(
+  messages: ChatMessage[],
+  scenarioContext: ScenarioContext
+): Promise<ChatResponse> {
+  const res = await fetchWithTimeout(`${getBase()}/api/v1/ai/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      monthly_income: monthlyIncome,
-      monthly_housing: monthlyHousing,
-      other_needs: otherNeeds,
-      is_affordable: isAffordable,
-      housing_pct_of_income: housingPctOfIncome,
-      needs_budget_50: needsBudget50,
-      remaining_needs_after_housing: remainingNeedsAfterHousing,
-      pmi_monthly: pmiMonthly,
-      term_years: termYears,
+      messages,
+      scenario_context: scenarioContext,
     }),
   });
   if (!res.ok) throw new Error(await res.text());

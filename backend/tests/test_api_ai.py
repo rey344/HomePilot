@@ -1,4 +1,4 @@
-"""API tests for /api/ai/explain."""
+"""API tests for /api/ai/explain and /api/ai/chat."""
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -21,6 +21,7 @@ def test_explain_endpoint_affordable():
     )
     assert resp.status_code == 200
     data = resp.json()
+    assert "summary" in data
     assert "narrative" in data
     assert "suggestions" in data
     assert "provider" in data
@@ -50,3 +51,26 @@ def test_explain_endpoint_not_affordable():
     assert "narrative" in data
     assert "provider" in data
     assert any("down payment" in s.lower() for s in data["suggestions"])
+
+
+def test_chat_endpoint():
+    resp = client.post(
+        "/api/v1/ai/chat",
+        json={
+            "messages": [{"role": "user", "content": "Is this affordable?"}],
+            "scenario_context": {
+                "home_value": 350000,
+                "down_payment": 70000,
+                "monthly_payment_total": 2200,
+                "monthly_income": 6500,
+                "is_affordable": True,
+                "housing_pct_of_income": 33.8,
+            },
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "message" in data
+    assert data["message"]["role"] == "assistant"
+    assert len(data["message"]["content"]) > 0
+    assert data["provider"] in ["mock", "groq"]

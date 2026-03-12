@@ -28,7 +28,16 @@ class AIProvider:
         self.provider_name = "base"
     
     def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 500) -> AIResponse:
-        """Generate response from AI provider."""
+        """Generate response from a single user prompt (system prompt may be fixed)."""
+        raise NotImplementedError
+    
+    def chat_completion(
+        self,
+        messages: list[dict],
+        temperature: float = 0.6,
+        max_tokens: int = 600,
+    ) -> AIResponse:
+        """Multi-turn chat: messages is a list of {"role": "system"|"user"|"assistant", "content": "..."}."""
         raise NotImplementedError
 
 
@@ -66,6 +75,34 @@ class GroqProvider(AIProvider):
             logger.error("Groq API error: %s", e)
             return MockProvider().generate(prompt, temperature, max_tokens)
 
+    def chat_completion(
+        self,
+        messages: list[dict],
+        temperature: float = 0.6,
+        max_tokens: int = 600,
+    ) -> AIResponse:
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            return AIResponse(
+                content=response.choices[0].message.content or "",
+                provider="groq",
+                model=self.model,
+                tokens_used=response.usage.total_tokens,
+            )
+        except Exception as e:
+            logger.error("Groq chat error: %s", e)
+            return AIResponse(
+                content="I couldn’t process that right now. Please try again.",
+                provider="mock",
+                model="fallback",
+                tokens_used=0,
+            )
+
 
 class MockProvider(AIProvider):
     """Mock provider using rule-based responses (fallback when no API key set)."""
@@ -75,13 +112,25 @@ class MockProvider(AIProvider):
         self.provider_name = "mock"
     
     def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 500) -> AIResponse:
-        # Simple rule-based response
         content = (
             "This is a rule-based explanation (Groq API not configured). "
             "Set GROQ_API_KEY environment variable to enable real AI responses with Groq's free Llama models."
         )
         return AIResponse(
             content=content,
+            provider="mock",
+            model="rule-based",
+            tokens_used=0,
+        )
+
+    def chat_completion(
+        self,
+        messages: list[dict],
+        temperature: float = 0.6,
+        max_tokens: int = 600,
+    ) -> AIResponse:
+        return AIResponse(
+            content="Chat is available when GROQ_API_KEY is set. I’d then use your scenario to answer questions.",
             provider="mock",
             model="rule-based",
             tokens_used=0,
