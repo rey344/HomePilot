@@ -1,301 +1,140 @@
-# HomePilot – Homebuying & Financial Planning
+# HomePilot
 
-HomePilot is a full-stack homebuying and financial planning platform. It helps users understand the **true cost of homeownership** and make decisions aligned with the **50/30/20 budgeting framework**.
-
-## 🚀 Live Demo
-
-> **Coming Soon**: Deployed on Vercel + Railway
-
-<!-- Uncomment after deployment and replace with your actual URLs:
-- **App**: [https://your-app-name.vercel.app](https://your-app-name.vercel.app)
-- **API Docs**: [https://your-backend.up.railway.app/docs](https://your-backend.up.railway.app/docs)
--->
+A full-stack homebuying affordability platform. HomePilot helps prospective buyers understand the true monthly cost of owning a home — PITI, PMI, HOA, and maintenance — and evaluates that cost against their income using the 50/30/20 budgeting framework.
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|------------|
-| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS v4, Inter font |
-| **Backend** | FastAPI (Python), modular domain-driven design |
-| **Database** | PostgreSQL (Docker) or SQLite (local dev) |
-| **APIs** | REST with typed Pydantic schemas, OpenAPI/Swagger, API versioning |
-| **Infrastructure** | Docker Compose (optional); runs without Docker |
-| **Security** | Rate limiting (100 req/min), secret scanning (Gitleaks), pre-commit hooks, fail-fast config validation |
+|---|---|
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS v4 |
+| Backend | FastAPI (Python 3.13), Pydantic v2, SQLAlchemy 2 |
+| Database | PostgreSQL (Docker) · SQLite (local dev, no setup required) |
+| AI | Groq — Llama 3.3 70B; rule-based fallback when key not set |
+| External APIs | Federal Reserve FRED (live mortgage rates) · RapidAPI (property search) |
+| Infrastructure | Docker Compose, Alembic migrations, Railway + Vercel deploy targets |
+| Security | Rate limiting, Gitleaks pre-commit hooks, GitHub Actions secret scanning |
 
-## Core Features
+## Features
 
-- **True Homeownership Cost** – PITI + PMI + HOA + maintenance
-- **Real-Time Mortgage Rates** – Live 30-year fixed rates from Federal Reserve (FRED API) for accurate calculations
-- **50/30/20 Affordability** – Needs (50%), Wants (30%), Savings (20%); housing + other needs vs budget
-- **Mortgage Amortization** – Schedules with PMI (drops at 80% LTV), pagination, balance chart
-- **AI Financial Advisor** – Real LLM integration with Groq (FREE, fast Llama models) for personalized advice via `/api/ai/explain`
-- **Validation** – Strict input validation (down payment < home value, positive rates/income/term); no coercion; clear error messages
-- **ScenarioBuilder** – Raw string inputs, single compute pipeline, housing % color feedback (≤40% green, 40–50% amber, >50% red)
+- **Mortgage calculator** — principal & interest, property tax, insurance, PMI (drops at 80% LTV), HOA, maintenance
+- **50/30/20 affordability analysis** — housing cost as a share of income with per-bucket surplus/deficit breakdown
+- **Amortization schedule** — paginated month-by-month table with balance visualization
+- **Live mortgage rates** — 30-year fixed rate pulled from the Federal Reserve FRED API
+- **AI financial advisor** — Groq LLM generates a personalized narrative and actionable suggestions; graceful fallback to rule-based responses
+- **Financial profile modeling** — 5-year equity projection, rate-shock stress test (+2%), max affordable home price from income
+- **Property search** — RapidAPI listing integration with mock fallback
 
 ## Project Structure
 
 ```
 HomePilot/
-├── frontend/           # Next.js app
-│   ├── src/
-│   │   ├── app/        # Pages, layout, globals.css
-│   │   ├── components/ # ScenarioBuilder, ui (Card, Button, Input)
-│   │   ├── domain/     # Pure mortgage/budget calculations (single source of truth)
-│   │   ├── lib/        # API client, validate
-│   │   └── e2e/        # Playwright tests
-│   └── package.json
-├── backend/            # FastAPI app
-│   ├── app/
-│   │   ├── api/        # /api/calc, /api/profile, /api/ai
-│   │   ├── calculation_engine/
-│   │   ├── profile_modeling/
-│   │   ├── ai_services/
-│   │   ├── db/
-│   │   └── schemas/
-│   └── tests/
-├── infrastructure/
-│   └── docker-compose.yml
-└── docs/
-    ├── ARCHITECTURE.md
-    └── DESIGN.md
+├── frontend/                     # Next.js app (TypeScript)
+│   └── src/
+│       ├── app/                  # App Router pages and layout
+│       ├── components/           # ScenarioBuilder, RealEstateSearch, UI primitives
+│       ├── domain/               # Pure TS calculation functions (single source of truth)
+│       └── lib/                  # Typed API client, error parsing
+├── backend/                      # FastAPI app (Python)
+│   └── app/
+│       ├── api/                  # Versioned routers: calc, profile, ai, real-estate
+│       ├── calculation_engine/   # PITI, PMI, amortization — pure logic
+│       ├── profile_modeling/     # Affordability, projection, risk analysis
+│       ├── ai_services/          # Groq provider, prompt builder, response parser
+│       ├── real_estate_services/ # FRED rates, RapidAPI listings
+│       ├── db/                   # SQLAlchemy models, Alembic migrations, CRUD
+│       └── schemas/              # Pydantic request/response models
+├── infrastructure/               # Docker Compose, .env.example
+└── docs/                         # Architecture, design system, API guides
 ```
 
-## Running the Project
+## Running Locally
 
-### Option 1: Run with Docker Compose (recommended)
-
-From the repo root:
+### With Docker (recommended)
 
 ```bash
-# Quick setup with helper script (generates secure password automatically)
+# Generate a secure .env from the template
 ./infrastructure/setup-local-env.sh
 
-# Start all services
+# Start PostgreSQL + backend + frontend
 docker compose -f infrastructure/docker-compose.yml up --build -d
 ```
 
-**OR manually:**
+App: http://localhost:9002 · API docs: http://localhost:9001/docs
+
+### Without Docker
 
 ```bash
-# Copy and configure environment variables
-cp infrastructure/.env.example infrastructure/.env
-
-# ⚠️  SECURITY: Edit .env and set secure passwords
-# Generate strong password: openssl rand -base64 32
-# Replace CHANGE_ME_REQUIRED with your generated password
-nano infrastructure/.env  # or use your preferred editor
-
-# Start all services
-docker compose -f infrastructure/docker-compose.yml up --build -d
-```
-
-Then open [http://localhost:9002](http://localhost:9002) (app) and [http://localhost:9001/docs](http://localhost:9001/docs) (API docs).
-
-**Features:**
-- ✅ Automatic database migrations on startup
-- ✅ Health checks for all services
-- ✅ PostgreSQL with persistent data volume
-- ✅ Production-ready configuration
-- 🔒 Secure secret management (no hardcoded passwords)
-
-### Option 2: Run without Docker
-
-No Docker required. Backend uses SQLite in memory.
-
-**Terminal 1 – backend**
-
-```bash
+# Terminal 1 — backend (SQLite in memory, no database setup needed)
 cd backend
-pip install -r requirements.txt   # first time only
+pip install -r requirements.txt
 DATABASE_URL=sqlite:///:memory: uvicorn app.main:app --reload --port 9001
-```
 
-**Terminal 2 – frontend**
-
-```bash
+# Terminal 2 — frontend
 cd frontend
-npm install   # first time only
+npm install
 npm run dev
 ```
 
-Open **[http://localhost:9002](http://localhost:9002)** (app) and [http://localhost:9001/docs](http://localhost:9001/docs) (API docs).
+App: http://localhost:9002 · API docs: http://localhost:9001/docs
 
-## API Endpoints
-
-**Latest (v1):**
+## API Reference
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/calc/piti` | Monthly housing cost (PITI + PMI + HOA + maintenance) |
-| POST | `/api/v1/calc/amortization` | Amortization schedule (optional `max_months`) |
+|---|---|---|
+| POST | `/api/v1/calc/piti` | Monthly housing cost breakdown |
+| POST | `/api/v1/calc/amortization` | Full amortization schedule |
 | POST | `/api/v1/profile/affordability` | 50/30/20 affordability check |
 | POST | `/api/v1/ai/explain` | AI narrative and suggestions |
-| GET | `/health` | Health check with database connectivity |
+| GET | `/api/v1/real-estate/rates` | Current 30-year fixed rate (FRED) |
+| GET | `/health` | Health check with DB connectivity |
 
-**Legacy (v0) endpoints** at `/api/calc/*`, `/api/profile/*`, `/api/ai/*` are maintained for backward compatibility.
+Legacy routes at `/api/*` are preserved for backward compatibility.
 
-## Security Features
+## Security
 
-- 🔒 **Rate Limiting**: 100 requests/minute per IP
-- 🛡️ **Input Sanitization**: XSS protection on all user inputs
-- 🔐 **Secret Management**: Zero hardcoded credentials, fail-fast validation
-- 🔍 **Secret Scanning**: Pre-commit hooks (Gitleaks) + GitHub Actions (Gitleaks + TruffleHog)
-- 📊 **Logging**: Comprehensive request/response logging
-- 💉 **SQL Injection Protection**: Parameterized queries via SQLAlchemy
-- ❤️ **Health Checks**: Database connectivity monitoring
-- 🚫 **Pagination Limits**: Max 100 scenarios per query
-- 🔑 **Environment-based Config**: All secrets from env vars or .env files (never committed)
+- Rate limiting: 100 requests/minute per IP via `slowapi`
+- Parameterized queries throughout (SQLAlchemy ORM — no raw SQL)
+- Input validation and XSS sanitization on all user inputs
+- Secrets managed through environment variables only; app fails fast if required vars are missing
+- Pre-commit hooks run Gitleaks on every commit to prevent accidental secret exposure
+- GitHub Actions runs Gitleaks + TruffleHog on every push and PR
 
-**See [SECURITY.md](SECURITY.md) for comprehensive security documentation.**
+See [SECURITY.md](SECURITY.md) for the full policy.
 
-## Production Deployment
+## Deployment
 
-**📦 Deploy to production in minutes!**
-
-See the comprehensive [**Deployment Guide**](docs/DEPLOYMENT.md) for step-by-step instructions to deploy:
-- **Frontend**: Vercel (recommended)
-- **Backend**: Railway or Render
-- **Database**: Railway PostgreSQL, Neon, or Supabase
-
-**Quick Start Deployment:**
-1. Push code to GitHub
-2. Connect Railway to your repo (backend + database)
-3. Connect Vercel to your repo (frontend)
-4. Set environment variables
-5. Done! ✅
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for step-by-step instructions deploying to Railway (backend + PostgreSQL) and Vercel (frontend).
 
 ### Environment Variables
 
-**⚠️ SECURITY NOTICE:** All secrets are **REQUIRED** (no insecure defaults). The app will refuse to start if `DATABASE_URL` is missing.
+Copy `infrastructure/.env.example` to `infrastructure/.env` and set values before running.
 
-Required variables (set in `infrastructure/.env` or container environment):
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL or SQLite connection string |
+| `POSTGRES_PASSWORD` | Yes (Docker) | Generate with `openssl rand -base64 32` |
+| `CORS_ORIGINS` | Production | Comma-separated allowed origins |
+| `GROQ_API_KEY` | No | Enables real AI; falls back to rule-based if unset |
+| `FRED_API_KEY` | No | Live mortgage rates; uses cached default if unset |
+| `RAPIDAPI_KEY` | No | Property search; uses mock data if unset |
 
-```bash
-# Database credentials - GENERATE STRONG PASSWORDS
-# Use: openssl rand -base64 32
-POSTGRES_USER=homepilot
-POSTGRES_PASSWORD=<GENERATE_STRONG_PASSWORD>
-POSTGRES_DB=homepilot
-DATABASE_URL=postgresql://homepilot:<PASSWORD>@postgres:5432/homepilot
+The app will refuse to start if `DATABASE_URL` is missing — no insecure defaults.
 
-# CORS (comma-separated origins - NO wildcards in production)
-CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
-
-# Frontend API URL
-NEXT_PUBLIC_API_URL=https://api.yourdomain.com
-
-# Optional: RapidAPI for real estate listings (uses mock data if not set)
-RAPIDAPI_KEY=<your_key_or_leave_empty>
-```
-
-**Production Deployment:**
-- Use your platform's secret manager (Railway Secrets, Vercel Environment Variables)
-- Never commit `.env` files (they are gitignored)
-- Different credentials for dev/staging/production
-- Rotate secrets every 90 days
-
-See [SECURITY.md](SECURITY.md) for detailed secret management guide.
-
-### Docker Compose Commands
+### Tests
 
 ```bash
-# Start services
-docker compose -f infrastructure/docker-compose.yml up -d
+# Backend unit + integration tests
+cd backend && pytest tests/ -v
 
-# View logs
-docker compose -f infrastructure/docker-compose.yml logs -f
+# Frontend unit tests (Vitest)
+cd frontend && npm test
 
-# Stop services
-docker compose -f infrastructure/docker-compose.yml down
-
-# Rebuild and restart
-docker compose -f infrastructure/docker-compose.yml up --build -d
-
-# Remove all data
-docker compose -f infrastructure/docker-compose.yml down -v
-```
-
-### Testing
-
-```bash
-# Backend tests
-cd backend
-pytest
-
-# Frontend tests
-cd frontend
-npm test
-
-# E2E tests
-cd frontend
-npm run test:e2e
+# Frontend E2E tests (Playwright)
+cd frontend && npx playwright test
 ```
 
 ## Known Limitations
 
-- **Authentication**: Not implemented. Add OAuth2/JWT before production use.
-- **AI Service**: Requires Groq API key for real AI (FREE). Falls back to rule-based responses. See [AI Integration Guide](docs/AI_INTEGRATION.md).
-- **Caching**: No Redis/CDN caching implemented yet.
-- **File Storage**: No document upload/storage capabilities.
-
-## Contributing
-
-**Security First:** Install pre-commit hooks before making changes to prevent accidental secret commits.
-
-```bash
-# Install pre-commit hooks (one-time setup)
-pip install pre-commit
-pre-commit install
-
-# The hooks will now run automatically on git commit
-# To run manually: pre-commit run --all-files
-```
-
-Contribution workflow:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Install pre-commit hooks (see above)
-4. Make your changes
-5. Run tests (`pytest` in backend, `npm test` in frontend)
-6. Commit changes (pre-commit hooks will scan for secrets automatically)
-7. Push to branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
-
-**Pre-commit hooks will:**
-- ✅ Scan for hardcoded secrets (Gitleaks)
-- ✅ Detect private keys
-- ✅ Check YAML syntax
-- ✅ Lint Python code (Ruff)
-- ✅ Lint TypeScript/JavaScript (ESLint)
-
-## Tests
-
-**Backend**
-
-```bash
-cd backend
-pytest tests/ -v
-```
-
-**Frontend (Vitest)**
-
-```bash
-cd frontend
-npm run test
-```
-
-**E2E (Playwright)**
-
-```bash
-cd frontend
-npx playwright test
-```
-
-## Documentation
-
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** – System overview, domain modules, API design, data flow
-- **[docs/DESIGN.md](docs/DESIGN.md)** – Design system, colors, typography, components
-- **[docs/FRED_INTEGRATION.md](docs/FRED_INTEGRATION.md)** – FRED API setup for real-time mortgage rates (FREE)
-- **[docs/AI_INTEGRATION.md](docs/AI_INTEGRATION.md)** – Groq AI setup guide (free, fast Llama models)
-- **[SECURITY.md](SECURITY.md)** – Security best practices and secret management
+- No authentication. Add OAuth2/JWT before exposing user data.
+- No caching layer (Redis/CDN).
+- Groq API key required for real AI responses (free tier available at console.groq.com).
