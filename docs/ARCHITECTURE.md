@@ -11,17 +11,19 @@ System boundaries, domain separation, API design, and data flow.
 │                              CLIENT (Browser)                                │
 │              Next.js + React + TypeScript (frontend/)                         │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  domain/ (pure)  │  ScenarioBuilder  │  lib/api.ts  │  ui components  │   │
+│  │  domain/ (pure)  │  ScenarioBuilder  │  lib/api.ts  │  search/, UI      │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 └───────────────────────────────────────────┬─────────────────────────────────┘
-                                            │ REST (optional: /api/ai/explain)
+                                            │ REST (/api/v1: calc, profile, ai, real-estate)
                                             ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           FastAPI Backend (backend/app/)                      │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │ /api/calc   │  │ /api/profile │  │ /api/ai     │  │ OpenAPI / Swagger   │ │
-│  │ PITI, PMI,  │  │ affordability│  │ explain     │  │ /docs               │ │
-│  │ amortization │  │ scenarios    │  │             │  │                     │ │
+│  │ /api/v1/    │  │ /api/v1/    │  │ /api/v1/ai  │  │ OpenAPI / Swagger   │ │
+│  │ calc        │  │ profile     │  │ explain,    │  │ /docs               │ │
+│  │ piti,       │  │ afford.,    │  │ chat        │  │                     │ │
+│  │ amort.,     │  │ scenarios    │  │             │  │ /api/v1/real-estate │ │
+│  │ analyze     │  │              │  │             │  │ rates, search       │ │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └─────────────────────┘ │
 │         │                │                │                                  │
 │         ▼                ▼                ▼                                  │
@@ -50,17 +52,22 @@ HomePilot/
 │   │   ├── app/              # App Router, layout, globals.css
 │   │   ├── components/
 │   │   │   ├── ScenarioBuilder.tsx
-│   │   │   └── ui/           # Card, Button, Input
-│   │   ├── domain/           # Pure calculations (single source of truth)
-│   │   │   ├── index.ts      # calculateAffordabilitySummary, Scenario type
-│   │   │   ├── mortgage.ts   # loan amount, PI, tax, insurance, PMI, amortization
-│   │   │   ├── budget.ts     # 50/30/20 affordability
-│   │   │   ├── round.ts      # formatCurrency, roundToCents
-│   │   │   └── validate.ts   # validateScenario
+│   │   │   ├── AdvisorChat.tsx
+│   │   │   ├── search/       # SearchHomesView, SearchFilters, ListingCard
+│   │   │   └── ui/          # Card, Button, Input, Tooltip, Toast
+│   │   ├── domain/          # Pure calculations (single source of truth)
+│   │   │   ├── index.ts     # calculateAffordabilitySummary, Scenario type
+│   │   │   ├── mortgage.ts  # loan amount, PI, tax, insurance, PMI, amortization
+│   │   │   ├── budget.ts    # 50/30/20 affordability
+│   │   │   ├── listingAffordability.ts  # computeListingAffordability (Search Homes)
+│   │   │   ├── round.ts     # formatCurrency, roundToCents
+│   │   │   └── validate.ts  # validateScenario
 │   │   ├── lib/
-│   │   │   ├── api.ts        # fetchPiti, fetchAffordability, fetchExplain, etc.
-│   │   │   └── validate.ts   # parseApiError
-│   │   └── e2e/              # Playwright tests
+│   │   │   ├── api.ts       # fetchPiti, fetchExplain, fetchChat, fetchEnhancedLoanAnalysis, etc.
+│   │   │   ├── searchUtils.ts  # attachAffordability, sortListings, SearchFilters type
+│   │   │   ├── searchMock.ts   # getListingsForSearch (mock; swap for real API later)
+│   │   │   └── validate.ts    # parseApiError
+│   │   └── e2e/             # Playwright tests
 │   ├── vitest.config.ts
 │   └── package.json
 ├── backend/
@@ -139,9 +146,10 @@ Scenario (inputs)  →  calculateAffordabilitySummary()  →  AffordabilityResul
 
 ### 4.4 API Layer
 
-- `/api/calc/piti`, `/api/calc/amortization`
-- `/api/profile/affordability`, `/api/profile/scenarios`
-- `/api/ai/explain`
+- `/api/v1/calc/piti`, `/api/v1/calc/amortization`, `/api/v1/calc/analyze` (enhanced loan analysis)
+- `/api/v1/profile/affordability`, `/api/v1/profile/scenarios`, `/api/v1/profile/recommend-home-price`
+- `/api/v1/ai/explain`, `/api/v1/ai/chat` (scenario-aware advisor)
+- `/api/v1/real-estate/current-rate` (FRED), `/api/v1/real-estate/search`, `/api/v1/real-estate/search-with-profile`
 - Pydantic schemas; OpenAPI at `/docs`
 
 ---
@@ -151,8 +159,9 @@ Scenario (inputs)  →  calculateAffordabilitySummary()  →  AffordabilityResul
 1. User enters inputs in **ScenarioBuilder** (raw string state).
 2. On "Calculate", frontend parses and validates; if valid, calls `calculateAffordabilitySummary(scenario)`.
 3. UI renders **Monthly housing cost**, **50/30/20 budget**, **Amortization** from `result`.
-4. Frontend optionally calls `POST /api/ai/explain` with affordability data; renders **AI summary**.
-5. All outputs are consistent (single source of truth).
+4. Frontend optionally calls `POST /api/v1/ai/explain` (and `POST /api/v1/ai/chat` for advisor) with affordability/risk/projection context; renders **AI insights**.
+5. **Search Homes**: Listings come from a data layer (`getListingsForSearch` in `searchMock.ts`); each listing gets affordability via `computeListingAffordability()` (same 50/30/20 logic). Ready to swap mock for a real listings API in one place.
+6. All outputs are consistent (single source of truth).
 
 ---
 

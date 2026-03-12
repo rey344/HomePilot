@@ -1,239 +1,91 @@
-# Real Estate Listing Integration
+# Real Estate & Search Homes
 
-A powerful feature that allows users to search for homes and instantly see affordability analysis based on their financial profile.
+Search for homes and see affordability analysis based on your financial profile. Uses the same 50/30/20 logic as the calculator.
 
 ## Overview
 
-This feature integrates real estate listings from RapidAPI and combines them with HomePilot's affordability calculations to provide instant feedback on which homes fit within a buyer's budget.
+- **Search Homes page** (`/search-homes`): Two-column layout (filters left, results right). Listings are currently supplied by **mock data** (`frontend/src/lib/searchMock.ts`). Each listing gets an affordability tier and estimated monthly payment via shared domain logic; the UI is built so a real listings API can be connected later with minimal change.
+- **Backend real-estate API** (optional): FRED rates and RapidAPI-based search endpoints exist for when you want live data. The frontend Search Homes flow does not call them by default; it uses `getListingsForSearch()` which you can replace with an API client that returns the same `RawListing[]` shape.
 
 ## Features
 
-- **Real-Time Listing Search**: Search homes by location (city, state, or ZIP code)
-- **Instant Affordability Analysis**: Each listing shows:
-  - Monthly payment estimate
-  - Housing cost as % of income
-  - Affordability status: Safe, Good, Stretch, or Risky
-- **Customizable Parameters**: Set your own down payment %, interest rate, and income
-- **Sample Data Fallback**: Works without API key (uses demo data for testing)
+- **Search Homes UI**: Filters (location, price range, beds, baths, down %, rate, term, tax, insurance, HOA, maintenance, take-home income, other needs, “only in safe range”). Sort by price, payment, affordability, newest. Listing cards show image, price, beds/baths/sqft, est. monthly payment, and **affordability badge** (Safe / Stretch / Over budget) with short explanation.
+- **Affordability logic**: Reuses the calculator’s 50/30/20 model. Implemented in `frontend/src/domain/listingAffordability.ts` — `computeListingAffordability()` returns total monthly (P&I, tax, insurance, PMI, HOA, maintenance) and an affordability summary. `frontend/src/lib/searchUtils.ts` maps that to tiers and explanation text.
+- **Tiers**: Based on housing share of income and 50% needs budget:
+  - **Safe** — within recommended range (green).
+  - **Stretch** — above target but under 50% needs (warning).
+  - **Over budget** — exceeds 50% needs (danger).
 
 ## Architecture
 
-### Backend (`/backend`)
+### Frontend
 
-#### New Files Created:
-1. **`app/schemas/real_estate.py`**: Pydantic models for requests/responses
-   - `RealEstateSearchRequest`: Search criteria
-   - `PropertyListing`: Individual home listing
-   - `AffordabilityIndicator`: Affordability analysis result
-   - `ListingWithAffordability`: Combined listing + affordability
-   - `RealEstateSearchResponse`: Full search response
+| Area | Purpose |
+|------|---------|
+| `src/domain/listingAffordability.ts` | `computeListingAffordability()` — same P&I, tax, insurance, PMI, HOA, maintenance and 50/30/20 as calculator |
+| `src/lib/searchUtils.ts` | `attachAffordability()`, `sortListings()`, `SearchFilters` type, `ListingWithAffordability` |
+| `src/lib/searchMock.ts` | `getListingsForSearch(filters)` — returns mock listings; **single swap point** for a real API |
+| `src/components/search/SearchHomesView.tsx` | Two-column layout; calls `getListingsForSearch` → `attachAffordability` → filter → sort |
+| `src/components/search/SearchFilters.tsx` | Filter form (Card, Input, Button from design system) |
+| `src/components/search/ListingCard.tsx` | Single listing card with theme-based badges and `formatCurrency` |
 
-2. **`app/real_estate_services/rapidapi.py`**: RapidAPI integration
-   - `RapidAPIRealEstateService`: Service class for fetching listings
-   - Fallback to sample data when no API key configured
-   - Handles various response formats from RapidAPI
+To connect a real listings API: implement a function that returns `Promise<RawListing[]>` (same shape as mock) and use it instead of `getListingsForSearch` in the data layer (e.g. in `searchMock.ts` or a new `searchApi.ts`). No change to SearchHomesView, SearchFilters, or ListingCard beyond the data source.
 
-3. **`app/real_estate_services/affordability.py`**: Affordability analyzer
-   - `analyze_listing_affordability()`: Calculates if a listing is affordable
-   - Uses existing PITI and PMI calculation engines
-   - Returns status (safe/good/stretch/risky) based on housing % of income
+### Backend (optional)
 
-4. **`app/api/real_estate.py`**: FastAPI endpoints
-   - `POST /api/v1/real-estate/search`: Basic search with default profile
-   - `POST /api/v1/real-estate/search-with-profile`: Search with custom financial params
+- **`GET /api/v1/real-estate/current-rate`** — 30-year rate from FRED (see [FRED_INTEGRATION.md](FRED_INTEGRATION.md)).
+- **`POST /api/v1/real-estate/search`** — Listings with default financial assumptions.
+- **`POST /api/v1/real-estate/search-with-profile`** — Listings with custom income, down payment, rate, etc.
 
-#### Modifications:
-- **`app/main.py`**: Added real_estate router registration
-- **`infrastructure/.env.example`**: Added RAPIDAPI_KEY documentation
-
-### Frontend (`/frontend`)
-
-#### New Files Created:
-1. **`src/components/RealEstateSearch.tsx`**: Main search component
-   - Search form with location, price, income inputs
-   - Results display with affordability indicators
-   - Color-coded status badges (green/blue/yellow/red)
-   - Property details (beds, baths, sqft, etc.)
-
-2. **`src/app/search-homes/page.tsx`**: Dedicated search page
-
-#### Modifications:
-- **`src/lib/api.ts`**: Added API client functions:
-  - `searchRealEstate()`: Basic search
-  - `searchRealEstateWithProfile()`: Search with financial profile
-  - Type definitions for listing data structures
-- **`src/app/page.tsx`**: Added navigation header with link to Search Homes
+Backend uses `real_estate_services/` (FRED, RapidAPI) and `schemas/real_estate.py`. Frontend Search Homes does not call these by default; it uses mock data for polish and recruiter demos. When you add a real API, the frontend can call these endpoints and map responses to `RawListing[]`, or use a different provider.
 
 ## Setup
 
-### 1. RapidAPI Configuration (Optional)
+### Frontend (Search Homes with mock data)
 
-To use live real estate data:
-
-1. Sign up at [RapidAPI.com](https://rapidapi.com)
-2. Subscribe to "Realty in US" API
-3. Copy your API key
-4. Add to your `.env` file:
-   ```
-   RAPIDAPI_KEY=your_api_key_here
-   ```
-
-**Note**: Without an API key, the feature works with sample demo data.
-
-### 2. Backend Setup
+No API keys required. From repo root:
 
 ```bash
-cd backend
-source .venv/bin/activate
-# API key is optional - works with demo data if not set
-python -m uvicorn app.main:app --host 0.0.0.0 --port 9001 --reload
+cd frontend && npm install && npm run dev
 ```
 
-### 3. Frontend Setup
+Open **http://localhost:9002/search-homes**. Set filters and click “Search homes” to see mock listings with affordability badges.
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+### Backend (live rates + optional listing APIs)
 
-Visit: http://localhost:3000/search-homes
+1. **FRED (rates):** Add `FRED_API_KEY` to `infrastructure/.env` (see [FRED_INTEGRATION.md](FRED_INTEGRATION.md)). Frontend calculator can call `GET /api/v1/real-estate/current-rate` for the rate.
+2. **RapidAPI (listings):** Add `RAPIDAPI_KEY` to use backend search endpoints with live data. Without it, backend search still returns sample data.
 
-## Usage
+## API (backend) reference
 
-1. **Navigate** to "Search Homes" from the main page
-2. **Enter** your financial details:
-   - Monthly take-home income
-   - Annual gross income
-   - Maximum price you're willing to search
-   - Location (city, state, or ZIP)
-3. **Customize** (optional):
-   - Down payment percentage (default: 20%)
-   - Interest rate (default: 6.5%)
-4. **Click** "Search Listings"
-5. **Review** results sorted by affordability:
-   - **Safe** (green): < 25% of income
-   - **Good** (blue): 25-30% of income
-   - **Stretch** (yellow): 30-35% of income
-   - **Risky** (red): > 35% of income
+### GET `/api/v1/real-estate/current-rate`
 
-## API Endpoints
+Returns current 30-year fixed rate (FRED or default).
 
 ### POST `/api/v1/real-estate/search`
-Search listings with default financial assumptions.
 
-**Request Body:**
-```json
-{
-  "location": "San Francisco, CA",
-  "max_price": 500000,
-  "min_price": 300000,
-  "bedrooms": 2,
-  "bathrooms": 2,
-  "limit": 20
-}
-```
-
-**Response:**
-```json
-{
-  "listings": [
-    {
-      "listing": {
-        "property_id": "123",
-        "address": "123 Main St",
-        "city": "San Francisco",
-        "state": "CA",
-        "zip_code": "94102",
-        "price": 450000,
-        "bedrooms": 3,
-        "bathrooms": 2,
-        "sqft": 1650
-      },
-      "affordability": {
-        "status": "good",
-        "monthly_payment": 2847.50,
-        "housing_pct_of_income": 28.5,
-        "is_affordable": true,
-        "message": "Comfortable fit at 28.5% of income"
-      }
-    }
-  ],
-  "total_found": 5,
-  "search_location": "San Francisco, CA"
-}
-```
+Request body: `location`, `max_price`, `min_price`, `bedrooms`, `bathrooms`, `limit`, etc.  
+Response: `listings[]` with listing + affordability (status, monthly_payment, housing_pct_of_income, message).
 
 ### POST `/api/v1/real-estate/search-with-profile`
-Search with custom financial parameters (via query string and request body).
 
-**Query Parameters:**
-- `monthly_income`: Monthly take-home income
-- `annual_income`: Annual gross income
-- `down_payment_pct`: Down payment % (default: 20)
-- `interest_rate`: Interest rate % (default: 6.5)
-- `term_years`: Loan term (default: 30)
-- `property_tax_rate`: Property tax % (default: 1.2)
-- `insurance_annual`: Annual insurance $ (default: 1200)
-- `hoa_monthly`: Monthly HOA $ (default: 0)
+Same as search but with query/body params for monthly_income, down_payment_pct, interest_rate, term_years, property_tax_rate, insurance, hoa_monthly.
 
-**Request Body:** Same as `/search` endpoint
-
-## Affordability Calculation Logic
-
-The system uses HomePilot's proven calculation engine:
-
-1. **PITI Calculation**: Principal, Interest, Taxes, Insurance
-2. **PMI Calculation**: Private Mortgage Insurance (if down payment < 20%)
-3. **Total Monthly Payment**: PITI + PMI + HOA
-4. **Housing % of Income**: `(Monthly Payment / Monthly Income) × 100`
-5. **Status Determination**:
-   - Safe: < 25%
-   - Good: 25-30%
-   - Stretch: 30-35%
-   - Risky: > 35%
-
-## Development Notes
-
-- **Sample Data**: 5 demo listings returned when RAPIDAPI_KEY not configured
-- **Error Handling**: Graceful fallback to sample data on API errors
-- **Type Safety**: Full TypeScript types for all API responses
-- **Reusable Logic**: Leverages existing calculation_engine modules
-
-## Future Enhancements
-
-- [ ] **User authentication & personalized profiles**: Replace demo defaults with authenticated user's financial profile (monthly income, down payment %, etc.) - see TODO in `app/api/real_estate.py`
-- [ ] Favorite/save listings functionality
-- [ ] Email alerts for new listings
-- [ ] Map view integration
-- [ ] Detailed property page with full HomePilot breakdown
-- [ ] Comparison tool (side-by-side listings)
-- [ ] Historical price trends
-- [ ] Neighborhood insights
+Backend affordability uses its own calculation engine; status bands may differ slightly from the frontend 50/30/20 tiers (Safe / Stretch / Over budget). For a unified experience, the frontend Search Homes flow uses domain `computeListingAffordability()` and mock (or a future API that returns raw listing fields for the frontend to score).
 
 ## Testing
 
 ```bash
-# Backend tests
-cd backend
-pytest tests/test_api_real_estate.py
+# Backend
+cd backend && pytest tests/test_api_real_estate.py -v
 
-# Frontend tests
-cd frontend
-npm test -- RealEstateSearch
+# Frontend (unit tests for domain/search utils as needed)
+cd frontend && npm test
 ```
 
-## Dependencies
+## Future work
 
-- **Backend**: `httpx` (already in requirements.txt)
-- **Frontend**: No new dependencies
-
-## Portfolio Impact
-
-This feature demonstrates:
-- ✅ **API Integration**: Third-party data source (RapidAPI)
-- ✅ **Complex Data Transformation**: Parsing and standardizing external data
-- ✅ **Business Logic**: Sophisticated affordability calculations
-- ✅ **User Experience**: Real-world practical application
-- ✅ **Error Handling**: Graceful degradation with fallback data
-- ✅ **Scalability**: Service layer pattern for easy API swapping
+- Replace `getListingsForSearch()` with a real listings API (backend search-with-profile or another provider).
+- Optional: sync backend affordability bands with frontend 50/30/20 tiers if both are used.
+- Auth and saved profiles so Search Homes pre-fills income and assumptions.
+- Favorites, alerts, map view, comparison tool.

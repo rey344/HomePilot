@@ -52,14 +52,19 @@ AI_MAX_TOKENS=500                   # Maximum tokens in response
   "needs_budget_50": 3000,
   "remaining_needs_after_housing": 500,
   "pmi_monthly": 0,
-  "term_years": 30
+  "term_years": 30,
+  "risk_summary": null,
+  "projection_summary": null
 }
 ```
 
-**Response:**
+Optional: `risk_summary` and `projection_summary` give the AI context for richer, scenario-aware advice.
+
+**Response (structured):**
 ```json
 {
-  "narrative": "Your housing cost ($2,000/month) represents 33.3% of your take-home income. Combined with your other essential expenses ($500/month), you're well within the recommended 50% needs budget. This leaves you with healthy flexibility for discretionary spending and savings.",
+  "summary": "This scenario is affordable and leaves room in your needs budget.",
+  "narrative": "Your housing cost ($2,000/month) represents 33.3% of your take-home income. Combined with your other essential expenses ($500/month), you're well within the recommended 50% needs budget.\n\nThis leaves you with healthy flexibility for discretionary spending and savings.",
   "suggestions": [
     "Consider building an emergency fund with your 20% savings allocation",
     "You have room to increase retirement contributions",
@@ -72,11 +77,19 @@ AI_MAX_TOKENS=500                   # Maximum tokens in response
 ```
 
 **Response Fields:**
-- `narrative` - 2-3 sentence AI-generated explanation
-- `suggestions` - 2-4 actionable recommendations
-- `provider` - Which AI was used ("groq" or "mock")
-- `model` - Specific model name
+- `summary` - One-line takeaway
+- `narrative` - 2–3 short paragraphs (use `\n\n` between paragraphs)
+- `suggestions` - 3–4 actionable recommendations (verb-first)
+- `provider` - "groq" or "mock"
+- `model` - Model name
 - `tokens_used` - Token count
+
+### Endpoint: `POST /api/v1/ai/chat`
+
+Scenario-aware advisor: user asks follow-up questions; the model has context (home value, payment, income, risk, 5-year projection).
+
+**Request:** `{ "messages": [{ "role": "user"|"assistant", "content": "..." }], "scenario_context": { ... } }`  
+**Response:** `{ "message": { "role": "assistant", "content": "..." }, "provider", "model", "tokens_used" }`
 
 ## 💰 Cost: Completely FREE!
 
@@ -227,6 +240,6 @@ For issues:
 1. Get a free Groq API key: https://console.groq.com/keys
 2. Add to `.env`: `GROQ_API_KEY=gsk_your_key_here`
 3. Restart backend: `docker compose restart backend`
-4. Test: `curl http://localhost:9001/api/v1/ai/explain` with sample data
+4. Test: `curl -X POST http://localhost:9001/api/v1/ai/explain -H "Content-Type: application/json" -d '{ ... }'` with sample request body
 
 You now have production-ready AI integration! 🎉

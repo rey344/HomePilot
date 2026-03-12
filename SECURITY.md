@@ -35,7 +35,9 @@ The following environment variables MUST be set before running the application:
 | `POSTGRES_PASSWORD` | Database password | Generated with `openssl rand -base64 32` |
 
 Optional secrets:
-- `RAPIDAPI_KEY` - For real estate listings (uses mock data if not set)
+- `GROQ_API_KEY` — Enables real AI (explain + chat); rule-based fallback if not set
+- `FRED_API_KEY` — Live 30-year mortgage rates from Federal Reserve; cached default if not set
+- `RAPIDAPI_KEY` — Real estate listings; frontend Search Homes uses mock data if not set
 
 ### Fail-Fast Security
 

@@ -54,9 +54,9 @@ HomePilot/
 ├── frontend/                     # Next.js app (TypeScript)
 │   └── src/
 │       ├── app/                  # App Router pages and layout
-│       ├── components/           # ScenarioBuilder, RealEstateSearch, UI primitives
-│       ├── domain/               # Pure TS calculation functions (single source of truth)
-│       └── lib/                  # Typed API client, error parsing
+│       ├── components/           # ScenarioBuilder, search/ (SearchHomesView, SearchFilters, ListingCard), AdvisorChat, UI
+│       ├── domain/               # Pure TS: mortgage, budget, listingAffordability, round, validate
+│       └── lib/                  # API client, searchUtils, searchMock (listings data layer)
 ├── backend/                      # FastAPI app (Python)
 │   └── app/
 │       ├── api/                  # Versioned routers: calc, profile, ai, real-estate
@@ -108,7 +108,8 @@ App: http://localhost:9002 · API docs: http://localhost:9001/docs
 | POST | `/api/v1/calc/amortization` | Full amortization schedule |
 | POST | `/api/v1/profile/affordability` | 50/30/20 affordability check |
 | POST | `/api/v1/ai/explain` | AI narrative and suggestions |
-| GET | `/api/v1/real-estate/rates` | Current 30-year fixed rate (FRED) |
+| GET | `/api/v1/real-estate/current-rate` | Current 30-year fixed rate (FRED) |
+| POST | `/api/v1/ai/chat` | Scenario-aware AI advisor chat |
 | GET | `/health` | Health check with DB connectivity |
 
 Legacy routes at `/api/*` are preserved for backward compatibility.
