@@ -24,17 +24,19 @@ export function AppNav() {
         <div className="flex items-center justify-between h-14">
           <Link
             href="/"
-            className="flex items-center gap-2 text-[var(--color-text-primary)] hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[rgba(17,24,39,0.9)] rounded"
+            className="inline-flex items-center gap-3 text-[var(--color-text-primary)] no-underline hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[#111827] rounded-md"
             aria-label="HomePilot home"
           >
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            <span
+              className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 text-white font-bold text-[1.1rem] leading-none"
               style={{ backgroundColor: "var(--color-primary)" }}
               aria-hidden
             >
-              <span className="text-white font-bold text-lg">H</span>
-            </div>
-            <span className="text-lg font-bold">HomePilot</span>
+              H
+            </span>
+            <span className="text-[1.125rem] font-semibold tracking-tight text-[var(--color-text-primary)]">
+              HomePilot
+            </span>
           </Link>
           <div className="flex gap-6">
             {navLinks.map(({ href, label }) => {
@@ -49,6 +51,7 @@ export function AppNav() {
                       : "text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
                   }`}
                   aria-current={isActive ? "page" : undefined}
+                  aria-label={isActive ? `${label} (current page)` : label}
                 >
                   {label}
                 </Link>

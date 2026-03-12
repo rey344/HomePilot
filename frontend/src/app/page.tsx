@@ -30,6 +30,9 @@ export default function Home() {
                 <span className="text-[var(--color-success)]">✓</span> 5-Year Projections
               </span>
             </div>
+            <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+              Risk analysis and 5-year projections appear in your results after you run the calculator.
+            </p>
           </div>
         </div>
       </div>

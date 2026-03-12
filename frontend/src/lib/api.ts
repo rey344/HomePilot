@@ -529,6 +529,12 @@ export interface EnhancedLoanAnalysisRequest {
   other_monthly_needs?: number;
 }
 
+function toNum(v: unknown): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") return parseFloat(v) || 0;
+  return 0;
+}
+
 export async function fetchEnhancedLoanAnalysis(
   request: EnhancedLoanAnalysisRequest
 ): Promise<EnhancedLoanAnalysisResponse> {
@@ -551,5 +557,34 @@ export async function fetchEnhancedLoanAnalysis(
     }),
   });
   if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  const data = await res.json();
+  const p = data.five_year_projection;
+  if (p) {
+    data.five_year_projection = {
+      ...p,
+      initial_home_value: toNum(p.initial_home_value),
+      projected_home_value: toNum(p.projected_home_value),
+      home_value_increase: toNum(p.home_value_increase),
+      home_value_increase_pct: toNum(p.home_value_increase_pct),
+      initial_loan_balance: toNum(p.initial_loan_balance),
+      projected_loan_balance: toNum(p.projected_loan_balance),
+      principal_paid: toNum(p.principal_paid),
+      initial_equity: toNum(p.initial_equity),
+      projected_equity: toNum(p.projected_equity),
+      equity_increase: toNum(p.equity_increase),
+      total_interest_paid: toNum(p.total_interest_paid),
+      total_payments: toNum(p.total_payments),
+      net_worth_change: toNum(p.net_worth_change),
+      annual_appreciation_rate: toNum(p.annual_appreciation_rate),
+      yearly_details: (p.yearly_details || []).map((yd: Record<string, unknown>) => ({
+        year: Number(yd.year) || 0,
+        home_value: toNum(yd.home_value),
+        loan_balance: toNum(yd.loan_balance),
+        equity: toNum(yd.equity),
+        cumulative_interest_paid: toNum(yd.cumulative_interest_paid),
+        cumulative_principal_paid: toNum(yd.cumulative_principal_paid),
+      })),
+    };
+  }
+  return data;
 }

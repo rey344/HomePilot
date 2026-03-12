@@ -33,6 +33,13 @@ const ROWS_PER_PAGE = 60;
 /** Take-home to gross: we use gross = takeHome / 0.77 (≈23% effective tax). Same factor for API and display. */
 const GROSS_FROM_TAKEHOME = 1 / 0.77;
 
+/** Coerce API value (number or Decimal-as-string) to number for formatCurrency. */
+function toNum(v: unknown): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") return parseFloat(v) || 0;
+  return 0;
+}
+
 /** Raw string state for inputs — no coercion; allows empty and typing. */
 type InputValues = Record<keyof Scenario, string>;
 
@@ -192,23 +199,34 @@ function BalanceChart({ schedule }: { schedule: AmortizationRow[] }) {
       </svg>
       {hovered && (
         <div
-          className="pointer-events-none fixed z-50 px-3 py-2 text-xs rounded-lg shadow-lg border whitespace-nowrap"
+          className="pointer-events-none fixed z-50 rounded-xl shadow-xl border min-w-[180px]"
           style={{
             left: hovered.x + 12,
             top: hovered.y + 8,
-            backgroundColor: "var(--color-surface)",
-            borderColor: "var(--color-border)",
-            color: "var(--color-text-primary)",
+            backgroundColor: "#111827",
+            borderColor: "rgba(0, 201, 255, 0.35)",
+            boxShadow: "0 12px 28px rgba(0,0,0,0.5), 0 0 0 1px rgba(0, 201, 255, 0.15)",
           }}
           role="tooltip"
         >
-          <div className="font-medium">
-            Month {hovered.row.month}
+          <div className="px-4 py-2.5 border-b border-[var(--color-border)]">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-primary)]">
+              Month {hovered.row.month}
+            </span>
           </div>
-          <div className="mt-1 space-y-0.5 text-[var(--color-text-muted)]">
-            <div>Balance: {formatCurrency(hovered.row.balance)}</div>
-            <div>Principal: {formatCurrency(hovered.row.principal)}</div>
-            <div>Interest: {formatCurrency(hovered.row.interest)}</div>
+          <div className="px-4 py-3 space-y-2 text-[13px]">
+            <div className="flex justify-between gap-4">
+              <span className="text-[var(--color-text-muted)]">Balance</span>
+              <span className="font-medium text-[var(--color-text-primary)] tabular-nums">{formatCurrency(hovered.row.balance)}</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-[var(--color-text-muted)]">Principal</span>
+              <span className="font-medium text-[var(--color-text-primary)] tabular-nums">{formatCurrency(hovered.row.principal)}</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-[var(--color-text-muted)]">Interest</span>
+              <span className="font-medium text-[var(--color-text-primary)] tabular-nums">{formatCurrency(hovered.row.interest)}</span>
+            </div>
           </div>
         </div>
       )}
@@ -239,6 +257,7 @@ export default function ScenarioBuilder() {
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: "success" | "error" | "info" }>>([]);
   const [downPaymentMode, setDownPaymentMode] = useState<"dollar" | "percent">("dollar");
   const [chatOpen, setChatOpen] = useState(false);
+  const formActionsRef = useRef<HTMLDivElement>(null);
 
   // Toast helper functions
   const addToast = (message: string, type: "success" | "error" | "info" = "success") => {
@@ -469,6 +488,13 @@ export default function ScenarioBuilder() {
   const interest5yr = first60.reduce((s, r) => s + r.interest, 0);
   const principal5yr = first60.reduce((s, r) => s + r.principal, 0);
 
+  // When validation errors appear, keep the form actions (Calculate button) in view
+  useEffect(() => {
+    if (fieldErrors && formActionsRef.current) {
+      formActionsRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [fieldErrors]);
+
   const scenarioContext: ScenarioContext | null =
     committedScenario && result && affordability && piti
       ? {
@@ -511,6 +537,7 @@ export default function ScenarioBuilder() {
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <Input
+                    id="homeValue"
                     label="Home value ($)"
                     type="number"
                     min={0}
@@ -522,6 +549,7 @@ export default function ScenarioBuilder() {
                     aria-label="Home value in dollars"
                   />
                   <Input
+                    id="downPayment"
                     label="Down payment ($)"
                     type="number"
                     min={0}
@@ -533,6 +561,7 @@ export default function ScenarioBuilder() {
                     aria-label="Down payment in dollars"
                   />
                   <Input
+                    id="annualRatePercent"
                     label="Interest rate (%)"
                     type="number"
                     min={0}
@@ -547,6 +576,7 @@ export default function ScenarioBuilder() {
                     aria-label="Annual interest rate percent"
                   />
                   <Input
+                    id="termYears"
                     label="Term (years)"
                     type="number"
                     min={1}
@@ -569,6 +599,7 @@ export default function ScenarioBuilder() {
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <Input
+                    id="annualPropertyTaxPercent"
                     label={
                       <Tooltip content="Typically 0.5-2.5% of home value per year" position="top" id="tooltip-property-tax">
                         <span>Property tax (%/year)</span>
@@ -586,6 +617,7 @@ export default function ScenarioBuilder() {
                     aria-label="Property tax percent per year (typically 0.5-2.5%)"
                   />
                   <Input
+                    id="annualInsurancePercent"
                     label={
                       <Tooltip content="Usually 0.3-0.5% of home value per year" position="top" id="tooltip-insurance">
                         <span>Insurance (%/year)</span>
@@ -603,6 +635,7 @@ export default function ScenarioBuilder() {
                     aria-label="Insurance percent per year (usually 0.3-0.5%)"
                   />
                   <Input
+                    id="hoaMonthly"
                     label="HOA ($/month)"
                     type="number"
                     min={0}
@@ -614,6 +647,7 @@ export default function ScenarioBuilder() {
                     aria-label="HOA fee in dollars per month"
                   />
                   <Input
+                    id="annualMaintenancePercent"
                     label="Maintenance (%/year)"
                     type="number"
                     min={0}
@@ -637,6 +671,7 @@ export default function ScenarioBuilder() {
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Input
+                    id="monthlyTakeHomeIncome"
                     label={
                       <Tooltip content="Your net income after taxes. We estimate gross income as take-home ÷ 0.77 (≈23% effective tax) for the recommended price range." position="top" id="tooltip-net-income">
                         <span>Monthly net income ($)</span>
@@ -654,6 +689,7 @@ export default function ScenarioBuilder() {
                     aria-label="Monthly net (take-home) income in dollars"
                   />
                   <Input
+                    id="otherMonthlyNeeds"
                     label={
                       <Tooltip content="Groceries, utilities, car payment, insurance, debt payments, etc." position="top" id="tooltip-other-needs">
                         <span>Other monthly needs ($)</span>
@@ -673,9 +709,14 @@ export default function ScenarioBuilder() {
                 </div>
               </section>
 
-              <div className="pt-2">
+              <div className="pt-2" ref={formActionsRef}>
                 <div className="flex flex-wrap gap-2 items-center">
-                  <Button type="submit">Calculate affordability</Button>
+                  <Button
+                    type="submit"
+                    aria-describedby={error || fieldErrors?._form ? "form-errors" : undefined}
+                  >
+                    Calculate affordability
+                  </Button>
                   <Button type="button" variant="secondary" onClick={saveScenario}>
                     💾 Save Scenario
                   </Button>
@@ -763,11 +804,13 @@ export default function ScenarioBuilder() {
           )}
 
           {(error || fieldErrors?._form) && (
-            <Card className="bg-[var(--warning-bg)]">
-              <p className="text-[var(--color-text-primary)]" role="alert">
-                {error ?? fieldErrors?._form}
-              </p>
-            </Card>
+            <div id="form-errors" role="alert" aria-live="polite">
+              <Card className="bg-[var(--warning-bg)]">
+                <p className="text-[var(--color-text-primary)]">
+                  {error ?? fieldErrors?._form}
+                </p>
+              </Card>
+            </div>
           )}
 
           {result && (
@@ -777,7 +820,7 @@ export default function ScenarioBuilder() {
                 click Calculate again to update.
               </p>
 
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid gap-8 lg:grid-cols-2" style={{ marginTop: "var(--space-3)" }}>
                 <Card>
                   <CardHeader>
                     <CardTitle>Monthly housing cost</CardTitle>
@@ -851,7 +894,7 @@ export default function ScenarioBuilder() {
                 {enhancedAnalysis?.risk_analysis && (
                   <Card className="lg:col-span-2">
                     <CardHeader>
-                      <CardTitle>⚠️ Financial Risk Indicators</CardTitle>
+                      <CardTitle>Financial risk indicators</CardTitle>
                       <p className="mt-1 text-sm text-[var(--color-text-muted)]">
                         Industry-standard thresholds for safe home financing
                       </p>
@@ -917,43 +960,64 @@ export default function ScenarioBuilder() {
                   </Card>
                 )}
 
-                {explain && (
-                  <Card className="lg:col-span-2 bg-[var(--primary-light)]">
+                {/* Single AI insights section: summary, recommendations, one callout, Ask advisor */}
+                {explain && result && (
+                  <Card className="lg:col-span-2 ring-1 ring-[var(--color-primary)]/10">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <span className="text-[var(--color-primary)]">AI summary</span>
+                      <CardTitle className="text-[var(--color-text-primary)]">
+                        AI insights
                       </CardTitle>
                     </CardHeader>
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                       {explain.summary && (
-                        <p className="font-semibold text-[var(--color-text-primary)]">
+                        <p className="text-[var(--color-text-primary)] font-medium leading-snug">
                           {explain.summary}
                         </p>
                       )}
-                      <div className="text-[var(--color-text-secondary)] leading-relaxed space-y-3">
-                        {explain.narrative
-                          .split(/\n\n+/)
-                          .filter((p) => p.trim())
-                          .map((para, i) => (
-                            <p key={i}>{para.trim()}</p>
-                          ))}
-                      </div>
+                      {explain.narrative && (
+                        <div className="text-[var(--color-text-secondary)] text-[15px] leading-relaxed space-y-2">
+                          {explain.narrative
+                            .split(/\n\n+/)
+                            .filter((p) => p.trim())
+                            .slice(0, 2)
+                            .map((para, i) => (
+                              <p key={i}>{para.trim()}</p>
+                            ))}
+                        </div>
+                      )}
+                      {affordability && affordability.remaining_needs_after_housing < 500 && affordability.remaining_needs_after_housing >= 0 && (
+                        <div
+                          className="rounded-lg border px-4 py-3"
+                          style={{ borderColor: "var(--color-warning)", backgroundColor: "var(--warning-bg)" }}
+                        >
+                          <p className="text-sm font-medium text-[var(--color-warning)]">
+                            Low buffer: {formatCurrency(affordability.remaining_needs_after_housing)} left in needs budget after housing. Consider a lower price or higher income buffer.
+                          </p>
+                        </div>
+                      )}
                       {explain.suggestions.length > 0 && (
                         <div>
-                          <p className="text-sm font-medium text-[var(--color-text-primary)] mb-2">Suggested next steps</p>
+                          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+                            Recommendations
+                          </p>
                           <ul className="space-y-2">
-                            {explain.suggestions.map((s, i) => (
-                              <li
-                                key={i}
-                                className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]"
-                              >
+                            {explain.suggestions.slice(0, 5).map((s, i) => (
+                              <li key={i} className="flex items-start gap-3 text-[15px] text-[var(--color-text-secondary)]">
                                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary)]" />
-                                {s}
+                                <span>{s}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
                       )}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => setChatOpen(true)}
+                        aria-label="Open advisor chat"
+                      >
+                        Ask advisor
+                      </Button>
                     </div>
                   </Card>
                 )}
@@ -965,7 +1029,7 @@ export default function ScenarioBuilder() {
                 {enhancedAnalysis?.cost_breakdown && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>📊 Cost Breakdown</CardTitle>
+                      <CardTitle>Cost breakdown</CardTitle>
                       <p className="mt-1 text-sm text-[var(--color-text-muted)]">
                         Monthly housing cost distribution
                       </p>
@@ -1006,71 +1070,87 @@ export default function ScenarioBuilder() {
                 )}
 
                 {/* 5-Year Projection */}
-                {enhancedAnalysis?.five_year_projection && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>📈 5-Year Projection</CardTitle>
-                      <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-                        Home value growth at {enhancedAnalysis.five_year_projection.annual_appreciation_rate}% annual appreciation
-                      </p>
-                    </CardHeader>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-3 gap-4 text-center">
-                        <div className="rounded-lg border p-3" style={{ borderColor: "var(--color-border)" }}>
-                          <p className="text-xs text-[var(--color-text-muted)]">Home Value (Year 5)</p>
-                          <p className="mt-1 text-lg font-bold text-[var(--color-success)]">
-                            {formatCurrency(enhancedAnalysis.five_year_projection.projected_home_value)}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border p-3" style={{ borderColor: "var(--color-border)" }}>
-                          <p className="text-xs text-[var(--color-text-muted)]">Total Equity</p>
-                          <p className="mt-1 text-lg font-bold text-[var(--color-primary)]">
-                            {formatCurrency(enhancedAnalysis.five_year_projection.projected_equity)}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border p-3" style={{ borderColor: "var(--color-border)" }}>
-                          <p className="text-xs text-[var(--color-text-muted)]">Net Worth Change</p>
-                          <p className="mt-1 text-lg font-bold text-[var(--color-text-primary)]">
-                            {formatCurrency(enhancedAnalysis.five_year_projection.net_worth_change)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        {enhancedAnalysis.five_year_projection.yearly_details.map((year, idx) => (
-                          <div key={idx} className="flex items-center gap-3 text-sm">
-                            <span className="w-16 text-[var(--color-text-muted)]">Year {year.year}</span>
-                            <div className="flex-1 flex items-center gap-2">
-                              <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ backgroundColor: "var(--color-border)" }}>
-                                <div
-                                  className="h-full rounded-full"
-                                  style={{
-                                    width: `${(year.equity / enhancedAnalysis.five_year_projection.projected_equity) * 100}%`,
-                                    backgroundColor: "var(--color-success)",
-                                  }}
-                                />
-                              </div>
-                              <span className="w-24 text-right font-medium">
-                                {formatCurrency(year.equity)}
-                              </span>
-                            </div>
+                {enhancedAnalysis?.five_year_projection && (() => {
+                  const proj = enhancedAnalysis.five_year_projection;
+                  const projectedHomeValue = toNum(proj.projected_home_value);
+                  const projectedEquity = toNum(proj.projected_equity);
+                  const netWorthChange = toNum(proj.net_worth_change);
+                  const annualRate = toNum(proj.annual_appreciation_rate);
+                  const totalPayments = toNum(proj.total_payments);
+                  const totalInterest = toNum(proj.total_interest_paid);
+                  const yearlyDetails = Array.isArray(proj.yearly_details) ? proj.yearly_details : [];
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>5-year projection</CardTitle>
+                        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                          Home value growth at {annualRate}% annual appreciation
+                        </p>
+                      </CardHeader>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                          <div className="rounded-lg border p-3" style={{ borderColor: "var(--color-border)" }}>
+                            <p className="text-xs text-[var(--color-text-muted)]">Home Value (Year 5)</p>
+                            <p className="mt-1 text-lg font-bold text-[var(--color-success)]">
+                              {formatCurrency(projectedHomeValue)}
+                            </p>
                           </div>
-                        ))}
+                          <div className="rounded-lg border p-3" style={{ borderColor: "var(--color-border)" }}>
+                            <p className="text-xs text-[var(--color-text-muted)]">Total Equity</p>
+                            <p className="mt-1 text-lg font-bold text-[var(--color-primary)]">
+                              {formatCurrency(projectedEquity)}
+                            </p>
+                          </div>
+                          <div className="rounded-lg border p-3" style={{ borderColor: "var(--color-border)" }}>
+                            <p className="text-xs text-[var(--color-text-muted)]">Net Worth Change</p>
+                            <p className="mt-1 text-lg font-bold text-[var(--color-text-primary)]">
+                              {formatCurrency(netWorthChange, true)}
+                            </p>
+                          </div>
+                        </div>
+                        {yearlyDetails.length > 0 && (
+                          <div className="space-y-2">
+                            {yearlyDetails.map((year: { year?: number; equity?: unknown }, idx: number) => {
+                              const eq = toNum(year.equity);
+                              const pct = projectedEquity > 0 ? (eq / projectedEquity) * 100 : 0;
+                              return (
+                                <div key={idx} className="flex items-center gap-3 text-sm">
+                                  <span className="w-16 text-[var(--color-text-muted)]">Year {year.year ?? idx + 1}</span>
+                                  <div className="flex-1 flex items-center gap-2">
+                                    <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ backgroundColor: "var(--color-border)" }}>
+                                      <div
+                                        className="h-full rounded-full"
+                                        style={{
+                                          width: `${pct}%`,
+                                          backgroundColor: "var(--color-success)",
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="w-24 text-right font-medium">
+                                      {formatCurrency(eq)}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <div className="mt-3 rounded-lg border p-3 text-xs text-[var(--color-text-muted)]" style={{ 
+                          borderColor: "var(--color-border)", 
+                          backgroundColor: "var(--primary-light)" 
+                        }}>
+                          <p className="font-medium text-[var(--color-primary)]">Projection notes</p>
+                          <ul className="mt-1 space-y-0.5 list-disc list-inside">
+                            <li>Assumes {annualRate}% annual home appreciation</li>
+                            <li>Equity = Down payment + Principal paid + Home appreciation</li>
+                            <li>Total payments over 5 years: {formatCurrency(totalPayments)}</li>
+                            <li>Total interest paid: {formatCurrency(totalInterest)}</li>
+                          </ul>
+                        </div>
                       </div>
-                      <div className="mt-3 rounded-lg border p-3 text-xs text-[var(--color-text-muted)]" style={{ 
-                        borderColor: "var(--color-border)", 
-                        backgroundColor: "var(--primary-light)" 
-                      }}>
-                        <p className="font-medium text-[var(--color-primary)]">💡 Projection Notes:</p>
-                        <ul className="mt-1 space-y-0.5 list-disc list-inside">
-                          <li>Assumes {enhancedAnalysis.five_year_projection.annual_appreciation_rate}% annual home appreciation</li>
-                          <li>Equity = Down payment + Principal paid + Home appreciation</li>
-                          <li>Total payments over 5 years: {formatCurrency(enhancedAnalysis.five_year_projection.total_payments)}</li>
-                          <li>Total interest paid: {formatCurrency(enhancedAnalysis.five_year_projection.total_interest_paid)}</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </Card>
-                )}
+                    </Card>
+                  );
+                })()}
               </div>
 
               {amortization && displaySchedule.length > 0 && (
@@ -1193,21 +1273,24 @@ export default function ScenarioBuilder() {
       </main>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-      {/* Advisor chat: floating button + panel */}
-      <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-2">
+      {/* Advisor chat: solid card, collapsible (Ask Advisor button) */}
+      <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-3">
         {chatOpen && (
-          <div className="w-[360px] sm:w-[400px]">
+          <div
+            className="w-[360px] sm:w-[400px] rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden"
+            role="dialog"
+            aria-label="Advisor chat"
+          >
             <AdvisorChat scenarioContext={scenarioContext} onClose={() => setChatOpen(false)} />
           </div>
         )}
         <button
           type="button"
           onClick={() => setChatOpen((o) => !o)}
-          className="flex items-center gap-2 rounded-full px-4 py-3 shadow-lg font-medium text-sm transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)]"
-          style={{ backgroundColor: "var(--color-primary)", color: "white" }}
-          aria-label={chatOpen ? "Close advisor chat" : "Open advisor chat"}
+          className="flex items-center gap-2 rounded-xl px-4 py-3 bg-white border border-gray-200 shadow-md font-medium text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)] transition-shadow"
+          aria-label={chatOpen ? "Close advisor chat" : "Ask advisor"}
         >
-          {chatOpen ? "Close" : "Advisor chat"}
+          {chatOpen ? "Close" : "💬 Ask Advisor"}
         </button>
       </div>
     </div>
