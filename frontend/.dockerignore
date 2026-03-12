@@ -1,0 +1,7 @@
+# Exclude from build context for faster builds
+node_modules
+.next
+.git
+.env*.local
+*.md
+README.md

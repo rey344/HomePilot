@@ -1,0 +1,48 @@
+# Gitleaks configuration for HomePilot
+# See https://github.com/gitleaks/gitleaks for rule syntax
+
+title = "HomePilot Secret Scanning"
+
+[extend]
+# Use default gitleaks rules
+useDefault = true
+
+# Additional custom rules for this project
+[[rules]]
+id = "homepilot-database-url"
+description = "Detected hardcoded DATABASE_URL with credentials"
+regex = '''DATABASE_URL\s*=\s*['"]?postgresql://[^:]+:[^@]+@'''
+tags = ["database", "credentials"]
+
+[[rules]]
+id = "homepilot-postgres-password"
+description = "Detected hardcoded POSTGRES_PASSWORD"
+regex = '''POSTGRES_PASSWORD\s*[:=]\s*['"]?(?!(\$\{|CHANGE_ME|REQUIRED|YOUR_|<|changeme_in_production))[\w\-]{8,}'''
+tags = ["password", "postgresql"]
+
+[[rules]]
+id = "homepilot-generic-password"
+description = "Generic password in configuration"
+regex = '''['"]?password['"]?\s*[:=]\s*['"](?!(\$\{|CHANGE_ME|REQUIRED|password|YOUR_|<))[^'"]{8,}['"]'''
+tags = ["password", "generic"]
+
+# Allowlist patterns (files to skip)
+[allowlist]
+description = "Allowlisted files"
+paths = [
+    '''\.env\.example$''',
+    '''\.md$''',
+    '''^docs/''',
+    '''^frontend/.*\.test\.(ts|tsx|js|jsx)$''',
+    '''^backend/tests/conftest\.py$''',  # Uses SQLite in-memory, not real credentials
+]
+
+# Allowlist specific patterns in any file
+regexes = [
+    '''sqlite:///:memory:''',  # In-memory SQLite for tests
+    '''postgresql://user:pass@host:5432/db''',  # Generic documentation placeholder
+    '''CHANGE_ME''',
+    '''YOUR_.*_HERE''',
+    '''REQUIRED''',
+    '''changeme_in_production''',
+]
