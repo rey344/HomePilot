@@ -1,6 +1,22 @@
 # HomePilot
 
-A full-stack homebuying affordability platform. HomePilot helps prospective buyers understand the true monthly cost of owning a home — PITI, PMI, HOA, and maintenance — and evaluates that cost against their income using the 50/30/20 budgeting framework.
+**AI-powered home affordability: true monthly cost, 50/30/20 analysis, risk flags, and 5-year projections.**
+
+A full-stack homebuying platform that helps buyers see the real cost of ownership (PITI, PMI, HOA, maintenance), get a recommended price range from income, and compare scenarios with risk analysis and equity projections.
+
+<!-- Screenshot: add a screenshot of the calculator + results here, e.g. ![HomePilot](docs/screenshot.png) -->
+
+## Quick start
+
+```bash
+# Backend (Terminal 1)
+cd backend && pip install -r requirements.txt && DATABASE_URL=sqlite:///:memory: uvicorn app.main:app --reload --port 9001
+
+# Frontend (Terminal 2)
+cd frontend && npm install && npm run dev
+```
+
+App: **http://localhost:9002** · API docs: **http://localhost:9001/docs**
 
 ## Tech Stack
 
@@ -22,7 +38,14 @@ A full-stack homebuying affordability platform. HomePilot helps prospective buye
 - **Live mortgage rates** — 30-year fixed rate pulled from the Federal Reserve FRED API
 - **AI financial advisor** — Groq LLM generates a personalized narrative and actionable suggestions; graceful fallback to rule-based responses
 - **Financial profile modeling** — 5-year equity projection, rate-shock stress test (+2%), max affordable home price from income
-- **Property search** — RapidAPI listing integration with mock fallback
+- **Property search** — Listings with affordability badges (Safe / Stretch / Over budget); RapidAPI with mock fallback
+
+## Why this stack
+
+- **Next.js 16 + React 19** — App Router, server components, fast iteration.
+- **TypeScript end-to-end** — Shared types and validation; domain logic in pure TS (`frontend/src/domain/`) separate from UI.
+- **FastAPI + Pydantic v2** — Typed API, OpenAPI docs, clean request/response models; calculation engine and profile modeling live in dedicated modules.
+- **Groq + rule-based fallback** — AI narrative and suggestions when a key is set; no hard dependency for local dev.
 
 ## Project Structure
 
@@ -133,8 +156,16 @@ cd frontend && npm test
 cd frontend && npx playwright test
 ```
 
-## Known Limitations
+## Future work
+
+- **Auth** — OAuth2/JWT for saving scenarios and preferences.
+- **Caching** — Redis or CDN for rates and listing responses.
+- **Sensitivity analysis UI** — Rate ±1%, property tax changes, HOA introduced (backend support can be extended).
+- **Scenario comparison** — Side-by-side saved scenarios (localStorage already used for save/load).
+- **Lighthouse + CI** — Add performance budget and front-end tests to GitHub Actions.
+
+## Known limitations
 
 - No authentication. Add OAuth2/JWT before exposing user data.
 - No caching layer (Redis/CDN).
-- Groq API key required for real AI responses (free tier available at console.groq.com).
+- Groq API key required for real AI responses (free tier at [console.groq.com](https://console.groq.com)).
