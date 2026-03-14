@@ -1,4 +1,4 @@
-# FRED API Integration - Setup Complete ✅
+# FRED API Integration - Setup Complete 
 
 ## What Was Set Up
 
@@ -67,7 +67,7 @@ If you don't set `FRED_API_KEY`, the app uses 6.5% default:
 
 ---
 
-## 📊 What Changed
+##  What Changed
 
 | File | Change |
 |------|--------|
@@ -79,25 +79,25 @@ If you don't set `FRED_API_KEY`, the app uses 6.5% default:
 
 ---
 
-## 🎯 Benefits
+##  Benefits
 
-✅ **Accurate calculations** - Always uses current market rates  
-✅ **User trust** - Show "Based on today's 7.1% rate"  
-✅ **Automatic updates** - Cached for 24 hours, then refreshes  
-✅ **Fail-safe** - Falls back to 6.5% if API unavailable  
-✅ **FREE** - No cost, unlimited calls  
-
----
-
-## 🔐 Your API Key is Safe
-
-- ✅ `.env` file is gitignored (never committed)
-- ✅ Only accessible from backend server
-- ✅ Not exposed to frontend/users
+ **Accurate calculations** - Always uses current market rates  
+ **User trust** - Show "Based on today's 7.1% rate"  
+ **Automatic updates** - Cached for 24 hours, then refreshes  
+ **Fail-safe** - Falls back to 6.5% if API unavailable  
+ **FREE** - No cost, unlimited calls  
 
 ---
 
-## 📝 Next Steps
+##  Your API Key is Safe
+
+-  `.env` file is gitignored (never committed)
+-  Only accessible from backend server
+-  Not exposed to frontend/users
+
+---
+
+##  Next Steps
 
 1. **Add your FRED_API_KEY to** [infrastructure/.env](../infrastructure/.env) (copy from `.env.example` first if needed)
 2. **Restart your backend** to load the new config
@@ -106,7 +106,7 @@ If you don't set `FRED_API_KEY`, the app uses 6.5% default:
 
 ---
 
-## 🆘 Troubleshooting
+##  Troubleshooting
 
 **Issue:** Getting 6.5% rate even with API key set  
 **Solution:** 
@@ -124,7 +124,7 @@ uvicorn app.main:app --reload
 
 ---
 
-## 📚 FRED API Resources
+##  FRED API Resources
 
 - **Get API Key:** https://fred.stlouisfed.org/docs/api/api_key.html
 - **Documentation:** https://fred.stlouisfed.org/docs/api/fred/
