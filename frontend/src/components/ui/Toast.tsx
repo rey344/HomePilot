@@ -32,7 +32,7 @@ export function Toast({ message, type = "success", duration = 3000, onClose }: T
       <button
         type="button"
         onClick={onClose}
-        className="ml-2 opacity-90 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-transparent rounded"
+        className="ml-2 opacity-90 hover:opacity-100 transition-opacity duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-transparent rounded"
         style={{ color: "inherit" }}
         aria-label="Close"
       >

@@ -24,37 +24,46 @@ export function RiskAnalysisCard({ riskAnalysis }: Props) {
     <Card className="lg:col-span-2">
       <CardHeader>
         <CardTitle>Financial risk indicators</CardTitle>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
           Industry-standard thresholds for safe home financing
         </p>
       </CardHeader>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         {riskAnalysis.indicators.map((indicator, idx) => (
           <div
             key={idx}
-            className="flex items-start justify-between rounded-lg border p-3"
+            className="rounded-[var(--radius-input)] border p-4"
             style={indicatorStyle(indicator.level)}
           >
-            <div className="flex-1">
-              <p className="text-sm font-medium">{indicator.message}</p>
-              <p className="text-xs text-[var(--color-text-muted)]">Target: ≤{indicator.threshold}%</p>
-            </div>
-            <div className="text-right ml-2">
-              <p className="text-xs">{levelLabel(indicator.level)}</p>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm text-[var(--color-text-primary)] leading-snug">
+                  {indicator.message}
+                </p>
+                <span
+                  className="shrink-0 text-xs font-semibold uppercase tracking-wide"
+                  style={{ color: indicator.level === "safe" ? "var(--color-success)" : indicator.level === "moderate" ? "var(--color-warning)" : "var(--color-danger)" }}
+                >
+                  {levelLabel(indicator.level)}
+                </span>
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Target: ≤{indicator.threshold}%
+              </p>
             </div>
           </div>
         ))}
       </div>
       {riskAnalysis.warnings.length > 0 && (
         <div
-          className="mt-4 rounded-lg border p-4"
-          style={{ borderColor: "var(--color-warning)", backgroundColor: "var(--warning-bg)" }}
+          className="mt-6 rounded-[var(--radius-input)] border-l-4 border-[var(--color-warning)] p-4"
+          style={{ backgroundColor: "var(--warning-bg)" }}
         >
-          <p className="font-medium text-[var(--color-warning)]">Risk Warnings</p>
-          <ul className="mt-2 space-y-1">
+          <p className="text-sm font-semibold text-[var(--color-warning)]">Risk warnings</p>
+          <ul className="mt-2 space-y-1.5">
             {riskAnalysis.warnings.map((warning, i) => (
-              <li key={i} className="text-sm text-[var(--color-text-secondary)]">
-                • {warning}
+              <li key={i} className="text-sm text-[var(--color-text-primary)] leading-snug">
+                {warning}
               </li>
             ))}
           </ul>
@@ -62,14 +71,14 @@ export function RiskAnalysisCard({ riskAnalysis }: Props) {
       )}
       {riskAnalysis.strengths.length > 0 && (
         <div
-          className="mt-4 rounded-lg border p-4"
-          style={{ borderColor: "var(--color-success)", backgroundColor: "var(--success-bg)" }}
+          className="mt-6 rounded-[var(--radius-input)] border p-4"
+          style={{ borderColor: "var(--color-border)", backgroundColor: "var(--success-bg)" }}
         >
-          <p className="font-medium text-[var(--color-success)]">Financial Strengths</p>
-          <ul className="mt-2 space-y-1">
+          <p className="text-sm font-semibold text-[var(--color-success)]">Financial strengths</p>
+          <ul className="mt-2 space-y-1.5">
             {riskAnalysis.strengths.map((strength, i) => (
-              <li key={i} className="text-sm text-[var(--color-text-secondary)]">
-                • {strength}
+              <li key={i} className="text-sm text-[var(--color-text-primary)] leading-snug">
+                {strength}
               </li>
             ))}
           </ul>

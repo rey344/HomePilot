@@ -12,7 +12,7 @@ export function ScenarioRecommendationCard({ homeRecommendation, estimatedGrossA
     <Card>
       <CardHeader>
         <CardTitle>Recommended price range</CardTitle>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
           Estimated gross income: {formatCurrency(estimatedGrossAnnual)}/year
           <span className="text-xs block mt-1">
             Gross estimated from take-home (÷0.77). Recommended price is 28% of gross.
@@ -21,14 +21,14 @@ export function ScenarioRecommendationCard({ homeRecommendation, estimatedGrossA
       </CardHeader>
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border p-4" style={{ borderColor: "var(--color-border)" }}>
+          <div className="rounded-[var(--radius-input)] border p-4" style={{ borderColor: "var(--color-border)" }}>
             <p className="text-sm text-[var(--color-text-muted)]">Recommended</p>
             <p className="mt-1 text-2xl font-bold text-[var(--color-success)]">
               {formatCurrency(homeRecommendation.recommended_price)}
             </p>
             <p className="mt-1 text-xs text-[var(--color-text-muted)]">28% of estimated gross income</p>
           </div>
-          <div className="rounded-lg border p-4" style={{ borderColor: "var(--color-border)" }}>
+          <div className="rounded-[var(--radius-input)] border p-4" style={{ borderColor: "var(--color-border)" }}>
             <p className="text-sm text-[var(--color-text-muted)]">Maximum</p>
             <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)]">
               {formatCurrency(homeRecommendation.maximum_price)}
@@ -37,7 +37,7 @@ export function ScenarioRecommendationCard({ homeRecommendation, estimatedGrossA
           </div>
         </div>
         <div
-          className="rounded-lg border p-4"
+          className="rounded-[var(--radius-input)] border p-4"
           style={{ borderColor: "var(--color-border)", backgroundColor: "var(--primary-light)" }}
         >
           <p className="text-sm font-medium text-[var(--color-primary)]">Safe range</p>

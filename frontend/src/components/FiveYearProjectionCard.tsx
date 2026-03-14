@@ -21,25 +21,25 @@ export function FiveYearProjectionCard({ fiveYearProjection }: Props) {
     <Card>
       <CardHeader>
         <CardTitle>5-year projection</CardTitle>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
           Home value growth at {annualRate}% annual appreciation
         </p>
       </CardHeader>
       <div className="space-y-4">
         <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="rounded-lg border p-3" style={{ borderColor: "var(--color-border)" }}>
+          <div className="rounded-[var(--radius-input)] border p-3" style={{ borderColor: "var(--color-border)" }}>
             <p className="text-xs text-[var(--color-text-muted)]">Home Value (Year 5)</p>
             <p className="mt-1 text-lg font-bold text-[var(--color-success)]">
               {formatCurrency(projectedHomeValue)}
             </p>
           </div>
-          <div className="rounded-lg border p-3" style={{ borderColor: "var(--color-border)" }}>
+          <div className="rounded-[var(--radius-input)] border p-3" style={{ borderColor: "var(--color-border)" }}>
             <p className="text-xs text-[var(--color-text-muted)]">Total Equity</p>
             <p className="mt-1 text-lg font-bold text-[var(--color-primary)]">
               {formatCurrency(projectedEquity)}
             </p>
           </div>
-          <div className="rounded-lg border p-3" style={{ borderColor: "var(--color-border)" }}>
+          <div className="rounded-[var(--radius-input)] border p-3" style={{ borderColor: "var(--color-border)" }}>
             <p className="text-xs text-[var(--color-text-muted)]">Net Worth Change</p>
             <p className="mt-1 text-lg font-bold text-[var(--color-text-primary)]">
               {formatCurrency(netWorthChange, true)}
@@ -77,7 +77,7 @@ export function FiveYearProjectionCard({ fiveYearProjection }: Props) {
           </div>
         )}
         <div
-          className="mt-3 rounded-lg border p-3 text-xs text-[var(--color-text-muted)]"
+          className="mt-4 rounded-[var(--radius-input)] border p-3 text-xs text-[var(--color-text-muted)]"
           style={{
             borderColor: "var(--color-border)",
             backgroundColor: "var(--primary-light)",

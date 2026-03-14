@@ -21,7 +21,7 @@ export function CostBreakdownCard({ costBreakdown }: Props) {
     <Card>
       <CardHeader>
         <CardTitle>Cost breakdown</CardTitle>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
           Monthly housing cost distribution
         </p>
       </CardHeader>

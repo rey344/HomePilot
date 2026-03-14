@@ -14,7 +14,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    "inline-flex items-center justify-center h-11 min-w-[44px] rounded-[var(--radius-input)] px-5 text-sm font-medium transition-all focus-visible:outline focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-app)] disabled:pointer-events-none disabled:opacity-50";
+    "inline-flex items-center justify-center h-11 min-w-[44px] rounded-[var(--radius-input)] px-5 text-sm font-medium transition-all duration-150 focus-visible:outline focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-app)] disabled:pointer-events-none disabled:opacity-50";
   const variants = {
     primary:
       "text-white bg-[var(--color-primary)] hover:brightness-110 focus-visible:ring-[var(--color-primary)]",

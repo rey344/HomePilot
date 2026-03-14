@@ -22,6 +22,13 @@ export default function Home() {
             <p className="text-[15px] text-[var(--color-text-muted)] mb-4">
               Enter your numbers below and click Calculate to see results.
             </p>
+            <p className="text-xs text-[var(--color-text-muted)] mb-4" aria-label="Product flow">
+              <span className="text-[var(--color-primary)]">1. Calculator</span>
+              <span className="mx-1.5">→</span>
+              <span>2. Advisor (optional)</span>
+              <span className="mx-1.5">→</span>
+              <span>3. Search Homes</span>
+            </p>
             <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
               <span className="inline-flex items-center rounded-lg px-3 py-1.5 text-[var(--color-text-muted)]" style={{ backgroundColor: "var(--primary-light)" }}>
                 Price recommendations

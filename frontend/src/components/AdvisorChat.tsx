@@ -91,18 +91,21 @@ export function AdvisorChat({ scenarioContext, onClose }: AdvisorChatProps) {
       style={{ backgroundColor: "var(--color-surface-card)" }}
     >
       <div
-        className="flex items-center justify-between px-4 py-3 border-b shrink-0"
+        className="flex items-center justify-between border-b pb-4 shrink-0"
         style={{ borderColor: "var(--color-border)" }}
       >
-        <h3 className="font-semibold text-[var(--color-text-primary)]">Advisor</h3>
+        <h2 className="text-lg font-semibold tracking-tight text-[var(--color-text-primary)]">Advisor</h2>
       </div>
 
       {!hasContext ? (
-        <div className="flex-1 flex items-center justify-center p-4 text-center text-sm text-[var(--color-text-muted)]">
-          <p className="mb-2">Run the calculator and click Calculate first. Your scenario (home value, payment, income) will be used for advice here.</p>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <p className="text-[15px] text-[var(--color-text-muted)] mb-3 max-w-[280px]">
+            Run the calculator and click Calculate first. Your scenario (home value, payment, income) will be used for personalized advice here.
+          </p>
           <Link
             href="/"
-            className="font-medium text-[var(--color-primary)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-surface-card)] rounded"
+            className="inline-flex items-center justify-center h-11 min-w-[44px] rounded-[var(--radius-input)] px-5 text-sm font-medium text-white no-underline transition-all duration-150 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg-app)]"
+            style={{ background: "linear-gradient(90deg, #00C9FF, #00E0FF)" }}
           >
             Go to Calculator
           </Link>
@@ -122,7 +125,7 @@ export function AdvisorChat({ scenarioContext, onClose }: AdvisorChatProps) {
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                  className={`max-w-[85%] rounded-[var(--radius-input)] px-3 py-2 text-sm ${
                     m.role === "user"
                       ? "bg-[var(--color-primary)] text-[var(--color-primary-fg)]"
                       : "border bg-[var(--color-surface-input)] text-[var(--color-text-primary)]"
@@ -140,7 +143,7 @@ export function AdvisorChat({ scenarioContext, onClose }: AdvisorChatProps) {
             {loading && (
               <div className="flex justify-start">
                 <div
-                  className="rounded-lg px-3 py-2 text-sm border text-[var(--color-text-muted)]"
+                  className="rounded-[var(--radius-input)] px-3 py-2 text-sm border text-[var(--color-text-muted)]"
                   style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-surface-input)" }}
                 >
                   …
@@ -152,7 +155,7 @@ export function AdvisorChat({ scenarioContext, onClose }: AdvisorChatProps) {
             )}
           </div>
           <div
-            className="p-3 border-t flex gap-2 shrink-0"
+            className="p-4 border-t flex gap-2 shrink-0"
             style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-surface-card)" }}
           >
             <input
@@ -161,7 +164,7 @@ export function AdvisorChat({ scenarioContext, onClose }: AdvisorChatProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
               placeholder="Ask a question…"
-              className="flex-1 min-w-0 h-10 rounded-[var(--radius-input)] border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent placeholder:text-[var(--color-text-muted)]"
+              className="flex-1 min-w-0 h-11 rounded-[var(--radius-input)] border px-4 py-2.5 text-[15px] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
               style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-surface-input)", color: "var(--color-text-primary)" }}
               disabled={loading}
               aria-label="Chat message"

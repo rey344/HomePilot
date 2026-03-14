@@ -69,7 +69,7 @@ export function AppNav() {
         <div className="flex h-16 items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center gap-3 rounded-md text-[var(--color-text-primary)] no-underline transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[#111827]"
+            className="inline-flex items-center gap-3 rounded-md text-[var(--color-text-primary)] no-underline transition-opacity duration-150 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg-app)]"
             aria-label="HomePilot home"
           >
             <HomePilotLogo />
@@ -91,7 +91,7 @@ export function AppNav() {
                 <Link
                   key={href}
                   href={href}
-                  className={`rounded font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[rgba(17,24,39,0.9)] ${
+                  className={`rounded font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg-app)] ${
                     isActive
                       ? "text-[var(--color-primary)] underline underline-offset-4"
                       : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"

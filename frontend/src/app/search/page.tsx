@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { RealEstateSearch } from "@/components/RealEstateSearch";
 
@@ -5,6 +6,14 @@ export const metadata = {
   title: "Search Homes – HomePilot",
   description: "Search listings with affordability badges.",
 };
+
+function SearchFallback() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="h-48 rounded-[var(--radius)] border bg-[var(--color-surface-card)]" style={{ borderColor: "var(--color-border)" }} />
+    </div>
+  );
+}
 
 export default function SearchPage() {
   return (
@@ -14,7 +23,7 @@ export default function SearchPage() {
           <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
             Search Homes
           </h1>
-          <p className="mt-1 text-[15px] text-[var(--color-text-muted)]">
+          <p className="mt-2 text-[15px] text-[var(--color-text-muted)]">
             Search by location and budget; each listing shows an affordability badge. For a recommended price range, use the{" "}
             <Link
               href="/"
@@ -25,7 +34,9 @@ export default function SearchPage() {
             first.
           </p>
         </div>
-        <RealEstateSearch />
+        <Suspense fallback={<SearchFallback />}>
+          <RealEstateSearch />
+        </Suspense>
       </div>
     </div>
   );

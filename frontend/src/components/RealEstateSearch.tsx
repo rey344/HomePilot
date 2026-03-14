@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Card } from "./ui/Card";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { Card, CardHeader, CardTitle } from "./ui/Card";
 import { Input } from "./ui/Input";
 import { Button } from "./ui/Button";
 import * as api from "@/lib/api";
@@ -9,12 +10,27 @@ import { formatCurrency } from "@/domain";
 import { parseApiError, validateSearchForm } from "@/lib/validate";
 
 export function RealEstateSearch() {
+  const searchParams = useSearchParams();
   const [location, setLocation] = useState("");
   const [monthlyIncome, setMonthlyIncome] = useState("");
   const [annualIncome, setAnnualIncome] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [downPaymentPct, setDownPaymentPct] = useState("20");
   const [interestRate, setInterestRate] = useState("6.5");
+  const [recommendedRangeFromCalculator, setRecommendedRangeFromCalculator] = useState<{ minPrice: number; maxPrice: number } | null>(null);
+
+  useEffect(() => {
+    const min = searchParams.get("minPrice");
+    const max = searchParams.get("maxPrice");
+    if (min != null && max != null) {
+      const minNum = parseFloat(min);
+      const maxNum = parseFloat(max);
+      if (Number.isFinite(minNum) && Number.isFinite(maxNum) && minNum > 0 && maxNum >= minNum) {
+        setRecommendedRangeFromCalculator({ minPrice: minNum, maxPrice: maxNum });
+        setMaxPrice(String(Math.round(maxNum)));
+      }
+    }
+  }, [searchParams]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,28 +106,53 @@ export function RealEstateSearch() {
   return (
     <div className="space-y-6">
       <Card>
-        <div className="p-6">
-          <h2 className="text-2xl font-bold mb-4 text-[var(--color-text-primary)]">
-            Search by budget
-          </h2>
-          <p className="text-[var(--color-text-muted)] mb-2">
-            Listings are tagged by affordability (50/30/20) so you can see how each fits your budget.
+        <CardHeader>
+          <CardTitle>Search by budget</CardTitle>
+          <p className="mt-2 text-[15px] text-[var(--color-text-muted)]">
+            Enter a location and budget to see homes that fit your affordability profile. Each listing shows an estimated monthly payment and a tag so you can compare at a glance.
           </p>
-          <p className="text-sm text-[var(--color-text-muted)] mb-6">
-            Enter location, max price, and income to see estimated monthly payment and badge per listing.
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+            Listings will be tagged <strong className="text-[var(--color-text-primary)]">Safe</strong>, <strong className="text-[var(--color-text-primary)]">Good</strong>, <strong className="text-[var(--color-text-primary)]">Stretch</strong>, or <strong className="text-[var(--color-text-primary)]">Risky</strong> based on your housing-to-income ratio.
           </p>
+          {recommendedRangeFromCalculator && (
+            <div
+              className="mt-4 p-4 rounded-[var(--radius-input)] border text-sm"
+              style={{ borderColor: "var(--color-primary)", backgroundColor: "var(--primary-light)" }}
+            >
+              <p className="font-medium text-[var(--color-text-primary)]">
+                Using recommended range from Calculator: {formatCurrency(recommendedRangeFromCalculator.minPrice)} – {formatCurrency(recommendedRangeFromCalculator.maxPrice)}
+              </p>
+              <p className="mt-0.5 text-[var(--color-text-muted)]">
+                Max price is pre-filled; results will show affordability for each listing.
+              </p>
+            </div>
+          )}
+        </CardHeader>
 
-          <form onSubmit={handleSearch} className="space-y-4" aria-busy={loading} aria-describedby={error ? "search-form-error" : undefined}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSearch} className="space-y-6" aria-busy={loading} aria-describedby={error ? "search-form-error" : undefined}>
+            <section className="space-y-4">
+              <h3 className="text-sm font-medium uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+                Location
+              </h3>
               <Input
-                label="Location (city, state, or ZIP)"
+                label="City, state, or ZIP"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="e.g., San Francisco, CA or 94102"
                 error={fieldErrors?.location}
                 aria-required="true"
               />
+              <p className="text-sm text-[var(--color-text-muted)]">
+                Where to search. Results will show listings in this area.
+              </p>
+            </section>
 
+            <div role="separator" className="border-t" style={{ borderColor: "var(--color-border)" }} />
+
+            <section className="space-y-4">
+              <h3 className="text-sm font-medium uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+                Budget
+              </h3>
               <Input
                 label="Max price ($)"
                 type="number"
@@ -122,58 +163,83 @@ export function RealEstateSearch() {
                 error={fieldErrors?.maxPrice}
                 aria-required="true"
               />
+              <p className="text-sm text-[var(--color-text-muted)]">
+                We’ll only show listings at or below this price.
+              </p>
+            </section>
 
-              <Input
-                label="Monthly take-home income ($)"
-                type="number"
-                min={1}
-                value={monthlyIncome}
-                onChange={(e) => setMonthlyIncome(e.target.value)}
-                placeholder="6500"
-                error={fieldErrors?.monthlyIncome}
-                aria-required="true"
-              />
+            <div role="separator" className="border-t" style={{ borderColor: "var(--color-border)" }} />
 
-              <Input
-                label="Annual gross income ($)"
-                type="number"
-                min={1}
-                value={annualIncome}
-                onChange={(e) => setAnnualIncome(e.target.value)}
-                placeholder="100000"
-                error={fieldErrors?.annualIncome}
-                aria-required="true"
-              />
+            <section className="space-y-4">
+              <h3 className="text-sm font-medium uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+                Income
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Monthly take-home income ($)"
+                  type="number"
+                  min={1}
+                  value={monthlyIncome}
+                  onChange={(e) => setMonthlyIncome(e.target.value)}
+                  placeholder="6500"
+                  error={fieldErrors?.monthlyIncome}
+                  aria-required="true"
+                />
+                <Input
+                  label="Annual gross income ($)"
+                  type="number"
+                  min={1}
+                  value={annualIncome}
+                  onChange={(e) => setAnnualIncome(e.target.value)}
+                  placeholder="100000"
+                  error={fieldErrors?.annualIncome}
+                  aria-required="true"
+                />
+              </div>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                Used to estimate affordability. Take-home is after taxes; gross is before. We use both for a more accurate picture.
+              </p>
+            </section>
 
-              <Input
-                label="Down payment %"
-                type="number"
-                min={0}
-                max={100}
-                step={0.1}
-                value={downPaymentPct}
-                onChange={(e) => setDownPaymentPct(e.target.value)}
-                placeholder="20"
-                error={fieldErrors?.downPaymentPct}
-              />
+            <div role="separator" className="border-t" style={{ borderColor: "var(--color-border)" }} />
 
-              <Input
-                label="Interest rate %"
-                type="number"
-                min={0}
-                max={30}
-                step={0.1}
-                value={interestRate}
-                onChange={(e) => setInterestRate(e.target.value)}
-                placeholder="6.5"
-                error={fieldErrors?.interestRate}
-              />
-            </div>
+            <section className="space-y-4">
+              <h3 className="text-sm font-medium uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+                Loan assumptions
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Down payment %"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={downPaymentPct}
+                  onChange={(e) => setDownPaymentPct(e.target.value)}
+                  placeholder="20"
+                  error={fieldErrors?.downPaymentPct}
+                />
+                <Input
+                  label="Interest rate %"
+                  type="number"
+                  min={0}
+                  max={30}
+                  step={0.1}
+                  value={interestRate}
+                  onChange={(e) => setInterestRate(e.target.value)}
+                  placeholder="6.5"
+                  error={fieldErrors?.interestRate}
+                />
+              </div>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                Used to estimate monthly payment and affordability for each listing. Adjust if you expect different terms.
+              </p>
+            </section>
 
             {error && (
               <div
                 id="search-form-error"
-                className="p-3 rounded-lg border"
+                className="p-4 rounded-[var(--radius-input)] border"
                 style={{ backgroundColor: "var(--danger-bg)", borderColor: "var(--color-danger)", color: "var(--color-danger)" }}
                 role="alert"
               >
@@ -181,37 +247,40 @@ export function RealEstateSearch() {
               </div>
             )}
 
-            <Button type="submit" disabled={loading} aria-busy={loading}>
-              {loading ? "Searching…" : "Search listings"}
-            </Button>
+            <div className="flex flex-col gap-3">
+              <Button type="submit" disabled={loading} aria-busy={loading}>
+                {loading ? "Searching…" : "Search listings"}
+              </Button>
+              {!hasSearched && (
+                <p className="text-sm text-[var(--color-text-muted)]">
+                  Enter a location and budget to see homes that fit your affordability profile.
+                </p>
+              )}
+            </div>
           </form>
-        </div>
       </Card>
 
       {hasSearched && results.length === 0 && (
         <Card>
-          <div className="p-6 text-center">
-            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
-              No listings found
-            </h3>
-            <p className="text-[var(--color-text-muted)] max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle>No listings found</CardTitle>
+            <p className="mt-2 text-[15px] text-[var(--color-text-muted)]">
               No homes in <strong className="text-[var(--color-text-primary)]">{searchLocation}</strong> within your max price. Try a higher max price or different location.
             </p>
-          </div>
+          </CardHeader>
         </Card>
       )}
 
       {results.length > 0 && (
         <Card>
-          <div className="p-6">
-            <h3 className="text-xl font-bold mb-2 text-[var(--color-text-primary)]">
-              {results.length} {results.length === 1 ? "listing" : "listings"} in {searchLocation}
-            </h3>
-            <p className="text-sm text-[var(--color-text-muted)] mb-4">
+          <CardHeader>
+            <CardTitle>{results.length} {results.length === 1 ? "listing" : "listings"} in {searchLocation}</CardTitle>
+            <p className="mt-2 text-sm text-[var(--color-text-muted)]">
               Affordability is based on housing share of income: Safe &lt;25%, Good 25–30%, Stretch 30–35%, Risky &gt;35%.
             </p>
+          </CardHeader>
 
-            <div className="flex flex-wrap gap-3 mb-4 p-3 rounded-[var(--radius-input)] border bg-[var(--color-surface-input)]" style={{ borderColor: "var(--color-border)" }} role="group" aria-label="Affordability legend">
+          <div className="flex flex-wrap gap-3 mb-6 p-4 rounded-[var(--radius-input)] border bg-[var(--color-surface-input)]" style={{ borderColor: "var(--color-border)" }} role="group" aria-label="Affordability legend">
               <span className="text-xs font-medium text-[var(--color-text-muted)]">Affordability</span>
               <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={getStatusStyle("safe")}>Safe</span>
               <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={getStatusStyle("good")}>Good</span>
@@ -223,7 +292,7 @@ export function RealEstateSearch() {
               {results.map((item) => (
                 <article
                   key={item.listing.property_id}
-                  className="rounded-lg p-4 transition-shadow hover:shadow-[var(--shadow-card)] border"
+                  className="rounded-[var(--radius)] p-4 transition-shadow hover:shadow-[var(--shadow-card)] border"
                   style={{ borderColor: "var(--color-border)" }}
                 >
                   <div className="flex flex-col sm:flex-row gap-4">
@@ -284,7 +353,7 @@ export function RealEstateSearch() {
                           href={item.listing.listing_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[var(--color-primary)] hover:underline text-sm mt-2 inline-block focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-surface-card)]"
+                          className="text-[var(--color-primary)] hover:underline text-sm mt-2 inline-block focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg-app)]"
                         >
                           View listing
                         </a>
@@ -294,7 +363,6 @@ export function RealEstateSearch() {
                 </article>
               ))}
             </div>
-          </div>
         </Card>
       )}
     </div>

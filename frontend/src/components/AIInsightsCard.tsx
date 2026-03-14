@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { formatCurrency } from "@/domain";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -8,6 +9,46 @@ interface Props {
   explain: ExplainResponse;
   affordability: AffordabilitySummary | null;
   onAskAdvisor: () => void;
+}
+
+/** Split narrative into short blocks for easier scanning (paragraphs and long sentences). */
+function narrativeBlocks(narrative: string): string[] {
+  const paragraphs = narrative.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  const blocks: string[] = [];
+  const maxChunk = 220;
+  for (const para of paragraphs) {
+    if (para.length <= maxChunk) {
+      blocks.push(para);
+    } else {
+      const sentences = para.split(/(?<=[.!])\s+/).filter(Boolean);
+      let current = "";
+      for (const s of sentences) {
+        if (current.length + s.length + 1 <= maxChunk && current.length > 0) {
+          current += " " + s;
+        } else {
+          if (current) blocks.push(current.trim());
+          current = s;
+        }
+      }
+      if (current.trim()) blocks.push(current.trim());
+    }
+  }
+  return blocks.slice(0, 6);
+}
+
+/** Wrap currency ($1,234) and percentages (26.5%) in emphasized spans. */
+function withEmphasizedNumbers(text: string): ReactNode {
+  const parts = text.split(/(\$[\d,]+(?:\.\d{2})?|[\d.]+%)/g);
+  return parts.map((part, i) => {
+    if (/^\$[\d,]+(?:\.\d{2})?$/.test(part) || /^[\d.]+%$/.test(part)) {
+      return (
+        <span key={i} className="font-semibold tabular-nums text-[var(--color-text-primary)]">
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
 }
 
 export function AIInsightsCard({ explain, affordability, onAskAdvisor }: Props) {
@@ -26,43 +67,47 @@ export function AIInsightsCard({ explain, affordability, onAskAdvisor }: Props) 
           <p className="text-[var(--color-text-primary)] font-medium leading-snug">{explain.summary}</p>
         )}
         {explain.narrative && (
-          <div className="text-[var(--color-text-secondary)] text-[15px] leading-relaxed space-y-2">
-            {explain.narrative
-              .split(/\n\n+/)
-              .filter((p) => p.trim())
-              .slice(0, 2)
-              .map((para, i) => (
-                <p key={i}>{para.trim()}</p>
-              ))}
+          <div className="text-[var(--color-text-secondary)] text-[15px] leading-relaxed space-y-3">
+            {narrativeBlocks(explain.narrative).map((block, i) => (
+              <p key={i} className="leading-relaxed">
+                {withEmphasizedNumbers(block)}
+              </p>
+            ))}
           </div>
         )}
         {showLowBuffer && (
           <div
-            className="rounded-lg border px-4 py-3"
-            style={{ borderColor: "var(--color-warning)", backgroundColor: "var(--warning-bg)" }}
+            className="rounded-[var(--radius-input)] border-l-4 border-[var(--color-warning)] px-4 py-3"
+            style={{ backgroundColor: "var(--warning-bg)" }}
           >
-            <p className="text-sm font-medium text-[var(--color-warning)]">
-              Limited buffer: {formatCurrency(affordability!.remaining_needs_after_housing)} left in
-              needs after housing. Consider a lower price or higher income.
+            <p className="text-sm text-[var(--color-text-primary)]">
+              <span className="font-semibold text-[var(--color-warning)]">Low buffer: </span>
+              {formatCurrency(affordability!.remaining_needs_after_housing)} left after housing. Consider a lower price or higher income.
             </p>
           </div>
         )}
         {explain.suggestions.length > 0 && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)] mb-3">
               Recommendations
             </p>
-            <ul className="space-y-2">
+            <ol className="space-y-3 list-none pl-0">
               {explain.suggestions.slice(0, 5).map((s, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-3 text-[15px] text-[var(--color-text-secondary)]"
+                  className="flex gap-3 text-[15px] text-[var(--color-text-secondary)] leading-relaxed"
                 >
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary)]" />
-                  <span>{s}</span>
+                  <span
+                    className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-[var(--color-primary)]"
+                    style={{ backgroundColor: "var(--primary-light)" }}
+                    aria-hidden
+                  >
+                    {i + 1}
+                  </span>
+                  <span>{withEmphasizedNumbers(s)}</span>
                 </li>
               ))}
-            </ul>
+            </ol>
           </div>
         )}
         <Button

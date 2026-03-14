@@ -17,11 +17,11 @@ export function SavedScenariosDropdown({ savedScenarios, onLoad, onDelete }: Pro
   return (
     <div className="flex-1 min-w-[200px]">
       <details className="group">
-        <summary className="cursor-pointer text-sm text-[var(--color-primary)] hover:underline">
+        <summary className="cursor-pointer text-sm text-[var(--color-primary)] hover:underline transition-colors duration-150">
           Saved scenarios ({savedScenarios.length})
         </summary>
         <div
-          className="mt-2 space-y-2 max-h-[200px] overflow-y-auto border rounded-lg p-3"
+          className="mt-2 space-y-2 max-h-[200px] overflow-y-auto border rounded-[var(--radius-input)] p-3"
           style={{ borderColor: "var(--color-border)" }}
         >
           {savedScenarios.map((saved, idx) => (

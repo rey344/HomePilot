@@ -296,6 +296,14 @@ export default function ScenarioBuilder() {
         }
       : null;
 
+  useEffect(() => {
+    if (scenarioContext != null) {
+      try {
+        localStorage.setItem("homepilot_last_scenario", JSON.stringify(scenarioContext));
+      } catch (_) {}
+    }
+  }, [scenarioContext]);
+
   return (
     <div className="relative z-10">
       <main className="py-6 sm:py-8 pb-12">
@@ -487,8 +495,8 @@ export default function ScenarioBuilder() {
                 </div>
               </section>
 
-              <div className="pt-2" ref={formActionsRef}>
-                <div className="flex flex-wrap gap-2 items-center">
+              <div className="pt-4" ref={formActionsRef}>
+                <div className="flex flex-wrap gap-3 items-center">
                   <Button
                     type="submit"
                     aria-describedby={error || fieldErrors?._form ? "form-errors" : undefined}
@@ -537,14 +545,30 @@ export default function ScenarioBuilder() {
               <p className="text-[15px] text-[var(--color-text-muted)]" role="status">
                 Results reflect the scenario when you clicked Calculate. Edit inputs and calculate again to update.
               </p>
-              <p className="mt-2 text-[15px]">
-                <Link
-                  href="/search"
-                  className="font-medium text-[var(--color-primary)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg-app)]"
+              <div
+                className="mt-4 p-4 rounded-[var(--radius-input)] border flex flex-wrap items-center gap-3"
+                style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-surface-input)" }}
+              >
+                <span className="text-sm font-medium text-[var(--color-text-muted)] w-full sm:w-auto">Next steps</span>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setChatOpen(true)}
+                  className="shrink-0"
                 >
-                  Search homes in your budget
+                  Ask Advisor about this scenario
+                </Button>
+                <Link
+                  href={
+                    homeRecommendation
+                      ? `/search?minPrice=${Math.round(homeRecommendation.safe_min_price)}&maxPrice=${Math.round(homeRecommendation.safe_max_price)}`
+                      : "/search"
+                  }
+                  className="inline-flex items-center justify-center h-11 min-w-[44px] rounded-[var(--radius-input)] px-5 text-sm font-medium border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)] transition-colors duration-150 hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg-app)] no-underline"
+                >
+                  Search homes in this price range
                 </Link>
-              </p>
+              </div>
 
               <div className="grid gap-8 lg:grid-cols-2" style={{ marginTop: "var(--space-3)" }}>
                 <ScenarioMonthlyCostCard piti={piti!} />
@@ -616,7 +640,7 @@ export default function ScenarioBuilder() {
         <button
           type="button"
           onClick={() => setChatOpen((o) => !o)}
-          className="flex items-center gap-2 rounded-xl px-4 py-3 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)] transition-opacity hover:opacity-90 border"
+          className="flex items-center gap-2 rounded-xl px-4 py-3 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)] transition-opacity duration-150 hover:opacity-90 border"
           style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-surface-card)", color: "var(--color-text-primary)" }}
           aria-label={chatOpen ? "Close Advisor" : "Ask Advisor"}
         >
