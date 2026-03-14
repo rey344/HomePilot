@@ -171,11 +171,3 @@ Scenario (inputs)  →  calculateAffordabilitySummary()  →  AffordabilityResul
 - **Local dev**: Backend with SQLite on 9001, frontend on 9002; no Docker required
 
 ---
-
-## 7. For interviewers
-
-To run the app locally and walk through the product: see the root [README.md](../README.md) sections **How to run it locally** and **Demo walkthrough**. The calculator drives the main flow; Search Homes and Advisor share the same affordability logic. API keys (Groq, FRED, RapidAPI) are optional; behavior without them is documented in the feature docs (e.g. [REAL_ESTATE_FEATURE.md](REAL_ESTATE_FEATURE.md)).
-
----
-
-*Design system (colors, typography, components): [DESIGN.md](DESIGN.md).*
