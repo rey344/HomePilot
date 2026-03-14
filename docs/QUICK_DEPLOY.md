@@ -47,7 +47,7 @@ Simple one-page deployment guide to get HomePilot live in ~15 minutes.
    - Should see: `{"status":"ok","version":"1.0.0","database":"connected"}`
    - Visit `https://your-backend-url.railway.app/docs` for API docs
 
-✅ Backend deployed!
+ Backend deployed!
 
 ---
 
@@ -84,7 +84,7 @@ Simple one-page deployment guide to get HomePilot live in ~15 minutes.
    - Example: `https://homepilot-reysanchez.vercel.app` or whatever name you choose
    - **Tip**: You can customize the project name during import to get a unique URL
 
-✅ Frontend deployed!
+ Frontend deployed!
 
 ---
 
@@ -102,7 +102,7 @@ Now that you have your Vercel URL, update backend CORS:
 
 3. Railway will automatically redeploy
 
-✅ CORS configured!
+ CORS configured!
 
 ---
 
@@ -125,28 +125,7 @@ Now that you have your Vercel URL, update backend CORS:
    - Visit `https://your-backend-url.railway.app/docs`
    - Try the interactive docs
 
-✅ Everything working!
-
----
-
-## Step 5: Share with Recruiters 🚀
-
-**Your portfolio links:**
-
-📱 **Live App**: `https://your-app.vercel.app`
-
-🔧 **API Docs**: `https://your-backend-url.railway.app/docs`
-
-💻 **GitHub**: `https://github.com/your-username/HomePilot`
-
-**Add to your resume/LinkedIn:**
-```
-HomePilot - Full-Stack Homebuying Platform
-• Next.js + TypeScript + Tailwind CSS frontend
-• FastAPI + PostgreSQL backend
-• Deployed on Vercel + Railway
-• Live demo: https://your-app.vercel.app
-```
+ Everything working!
 
 ---
 
@@ -198,7 +177,7 @@ HomePilot - Full-Stack Homebuying Platform
 |---------|-----------|--------------|
 | **Railway** | $5 credit/month | Good for personal projects |
 | **Vercel** | Unlimited | Perfect for portfolios |
-| **Total** | **Free** | ✅ More than enough for demos |
+| **Total** | **Free** |  More than enough for demos |
 
 ---
 
@@ -212,6 +191,6 @@ HomePilot - Full-Stack Homebuying Platform
 
 ---
 
-**🎉 Congratulations!** Your app is now live and ready to impress recruiters!
+** Congratulations!** Your app is now live and ready to impress recruiters!
 
 Need help? Check the [full deployment guide](DEPLOYMENT.md).
