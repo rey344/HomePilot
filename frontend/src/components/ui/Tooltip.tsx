@@ -47,12 +47,13 @@ export function Tooltip({ content, children, position = "top", id: idProp }: Too
         <div
           ref={tooltipRef}
           id={tooltipId}
-          className={`absolute ${positionClass} z-50 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg max-w-[240px] whitespace-normal pointer-events-none`}
+          className={`absolute ${positionClass} z-50 px-3 py-2 text-xs rounded-[var(--radius-input)] shadow-[var(--shadow-card)] max-w-[240px] whitespace-normal pointer-events-none border`}
+          style={{ backgroundColor: "var(--color-surface-card)", color: "var(--color-text-primary)", borderColor: "var(--color-border)" }}
           role="tooltip"
         >
           {content}
           <div
-            className={`absolute w-2 h-2 bg-gray-900 transform rotate-45 ${
+            className={`absolute w-2 h-2 transform rotate-45 ${
               position === "top"
                 ? "bottom-[-4px] left-1/2 -translate-x-1/2"
                 : position === "bottom"
@@ -61,6 +62,7 @@ export function Tooltip({ content, children, position = "top", id: idProp }: Too
                 ? "right-[-4px] top-1/2 -translate-y-1/2"
                 : "left-[-4px] top-1/2 -translate-y-1/2"
             }`}
+            style={{ backgroundColor: "var(--color-surface-card)" }}
           />
         </div>
       )}

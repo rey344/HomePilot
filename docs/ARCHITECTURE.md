@@ -1,6 +1,8 @@
 # HomePilot – Architecture
 
-System boundaries, domain separation, API design, and data flow.
+This doc describes system boundaries, domain separation, API design, and data flow. Use it to understand how the calculator, search, and AI features fit together and where logic lives.
+
+**In short:** The frontend has a pure TypeScript domain layer for mortgage and budget math; the backend provides AI, home-price recommendations, and property search with per-listing affordability. Calculator results are derived from a single pipeline; backend is used for explain/chat, recommendations, and listings.
 
 ---
 
@@ -11,7 +13,7 @@ System boundaries, domain separation, API design, and data flow.
 │                              CLIENT (Browser)                                │
 │              Next.js + React + TypeScript (frontend/)                         │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  domain/ (pure)  │  ScenarioBuilder  │  lib/api.ts  │  search/, UI      │   │
+│  │  domain/ (pure)  │  ScenarioBuilder, RealEstateSearch  │  lib/api.ts  │  UI   │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 └───────────────────────────────────────────┬─────────────────────────────────┘
                                             │ REST (/api/v1: calc, profile, ai, real-estate)
@@ -52,30 +54,28 @@ HomePilot/
 │   │   ├── app/              # App Router, layout, globals.css
 │   │   ├── components/
 │   │   │   ├── ScenarioBuilder.tsx
+│   │   │   ├── RealEstateSearch.tsx
 │   │   │   ├── AdvisorChat.tsx
-│   │   │   ├── search/       # SearchHomesView, SearchFilters, ListingCard
 │   │   │   └── ui/          # Card, Button, Input, Tooltip, Toast
 │   │   ├── domain/          # Pure calculations (single source of truth)
 │   │   │   ├── index.ts     # calculateAffordabilitySummary, Scenario type
 │   │   │   ├── mortgage.ts  # loan amount, PI, tax, insurance, PMI, amortization
 │   │   │   ├── budget.ts    # 50/30/20 affordability
-│   │   │   ├── listingAffordability.ts  # computeListingAffordability (Search Homes)
 │   │   │   ├── round.ts     # formatCurrency, roundToCents
 │   │   │   └── validate.ts  # validateScenario
-│   │   ├── lib/
-│   │   │   ├── api.ts       # fetchPiti, fetchExplain, fetchChat, fetchEnhancedLoanAnalysis, etc.
-│   │   │   ├── searchUtils.ts  # attachAffordability, sortListings, SearchFilters type
-│   │   │   ├── searchMock.ts   # getListingsForSearch (mock; swap for real API later)
-│   │   │   └── validate.ts    # parseApiError
-│   │   └── e2e/             # Playwright tests
+│   │   └── lib/
+│   │       ├── api.ts       # fetchPiti, fetchExplain, fetchChat, fetchEnhancedLoanAnalysis, searchRealEstateWithProfile, etc.
+│   │       └── validate.ts  # parseApiError
+│   ├── e2e/                 # Playwright E2E tests (frontend root, not under src)
 │   ├── vitest.config.ts
 │   └── package.json
 ├── backend/
 │   ├── app/
-│   │   ├── api/              # calc, profile, ai routers
+│   │   ├── api/              # calc, profile, ai, real_estate routers
 │   │   ├── calculation_engine/
 │   │   ├── profile_modeling/
 │   │   ├── ai_services/
+│   │   ├── real_estate_services/  # FRED rates, RapidAPI listings, listing affordability
 │   │   ├── db/
 │   │   └── schemas/
 │   ├── tests/
@@ -160,8 +160,8 @@ Scenario (inputs)  →  calculateAffordabilitySummary()  →  AffordabilityResul
 2. On "Calculate", frontend parses and validates; if valid, calls `calculateAffordabilitySummary(scenario)`.
 3. UI renders **Monthly housing cost**, **50/30/20 budget**, **Amortization** from `result`.
 4. Frontend optionally calls `POST /api/v1/ai/explain` (and `POST /api/v1/ai/chat` for advisor) with affordability/risk/projection context; renders **AI insights**.
-5. **Search Homes**: Listings come from a data layer (`getListingsForSearch` in `searchMock.ts`); each listing gets affordability via `computeListingAffordability()` (same 50/30/20 logic). Ready to swap mock for a real listings API in one place.
-6. All outputs are consistent (single source of truth).
+5. **Search Homes** (page `/search`): User enters location and financial profile; frontend calls `POST /api/v1/real-estate/search-with-profile`. Backend fetches listings (RapidAPI or fallback), computes affordability per listing, returns listings with Safe/Stretch/Risky badges. Frontend renders them via `RealEstateSearch`.
+6. All calculator outputs are consistent (single source of truth in domain).
 
 ---
 
@@ -172,4 +172,10 @@ Scenario (inputs)  →  calculateAffordabilitySummary()  →  AffordabilityResul
 
 ---
 
-*For design system (colors, typography, components), see [DESIGN.md](DESIGN.md).*
+## 7. For interviewers
+
+To run the app locally and walk through the product: see the root [README.md](../README.md) sections **How to run it locally** and **Demo walkthrough**. The calculator drives the main flow; Search Homes and Advisor share the same affordability logic. API keys (Groq, FRED, RapidAPI) are optional; behavior without them is documented in the feature docs (e.g. [REAL_ESTATE_FEATURE.md](REAL_ESTATE_FEATURE.md)).
+
+---
+
+*Design system (colors, typography, components): [DESIGN.md](DESIGN.md).*

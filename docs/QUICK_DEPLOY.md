@@ -114,7 +114,7 @@ Now that you have your Vercel URL, update backend CORS:
    - Enter home value: $400,000
    - Enter down payment: $80,000
    - Enter monthly income: $8,000
-   - Click "**Calculate Affordability**"
+   - Click "**Calculate**"
    
 3. **Check the results**:
    - Should see PITI breakdown

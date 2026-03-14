@@ -31,6 +31,54 @@ export function validateScenario(terms: LoanTerms): FieldErrors | null {
   return err;
 }
 
+/** Search form field names for RealEstateSearch */
+export type SearchField =
+  | "location"
+  | "maxPrice"
+  | "monthlyIncome"
+  | "annualIncome"
+  | "downPaymentPct"
+  | "interestRate"
+  | "_form";
+
+export type SearchFieldErrors = Partial<Record<SearchField, string>>;
+
+export interface SearchFormValues {
+  location: string;
+  maxPrice: number;
+  monthlyIncome: number;
+  annualIncome: number;
+  downPaymentPct: number;
+  interestRate: number;
+}
+
+/** Validate search form; returns first-set of field errors or null. */
+export function validateSearchForm(values: SearchFormValues): SearchFieldErrors | null {
+  const err: SearchFieldErrors = {};
+  if (!values.location?.trim()) {
+    err.location = "Enter a city, state, or ZIP code.";
+  }
+  if (values.maxPrice <= 0 || !Number.isFinite(values.maxPrice)) {
+    err.maxPrice = "Max price must be greater than 0.";
+  }
+  if (values.monthlyIncome <= 0 || !Number.isFinite(values.monthlyIncome)) {
+    err.monthlyIncome = "Monthly income must be greater than 0.";
+  }
+  if (values.annualIncome <= 0 || !Number.isFinite(values.annualIncome)) {
+    err.annualIncome = "Annual income must be greater than 0.";
+  }
+  const pct = values.downPaymentPct;
+  if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+    err.downPaymentPct = "Down payment must be between 0 and 100%.";
+  }
+  const rate = values.interestRate;
+  if (!Number.isFinite(rate) || rate < 0 || rate > 30) {
+    err.interestRate = "Interest rate must be between 0% and 30%.";
+  }
+  if (Object.keys(err).length === 0) return null;
+  return err;
+}
+
 /** Parse API 422/400 into a user-friendly message */
 export function parseApiError(err: unknown): string {
   if (err instanceof Error && err.message) {

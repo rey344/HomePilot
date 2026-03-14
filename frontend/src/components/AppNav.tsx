@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navLinks = [{ href: "/", label: "Calculator" }] as const;
+const navLinks = [
+  { href: "/", label: "Calculator" },
+  { href: "/advisor", label: "Advisor" },
+  { href: "/search", label: "Search Homes" },
+] as const;
 
 function HomePilotLogo() {
   return (

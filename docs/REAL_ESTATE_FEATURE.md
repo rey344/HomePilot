@@ -1,20 +1,17 @@
 # Real Estate & Search Homes
 
-Search for homes and see affordability analysis based on your financial profile. Uses the same 50/30/20 logic as the calculator.
+Search for homes and see affordability analysis based on your financial profile. The backend uses the same 50/30/20 logic as the calculator; listings are tagged Safe / Good / Stretch / Risky.
 
 ## Overview
 
-- **Search Homes page** (`/search-homes`): Two-column layout (filters left, results right). Listings are currently supplied by **mock data** (`frontend/src/lib/searchMock.ts`). Each listing gets an affordability tier and estimated monthly payment via shared domain logic; the UI is built so a real listings API can be connected later with minimal change.
-- **Backend real-estate API** (optional): FRED rates and RapidAPI-based search endpoints exist for when you want live data. The frontend Search Homes flow does not call them by default; it uses `getListingsForSearch()` which you can replace with an API client that returns the same `RawListing[]` shape.
+- **Search Homes page** (`/search`): Form for location, max price, income, down payment %, and rate. Submits to the backend; results show listings with affordability badges and estimated monthly payment.
+- **Backend real-estate API**: FRED for current mortgage rate; RapidAPI for listings (with fallback when key is unset). Two search endpoints: `search` (default profile) and `search-with-profile` (custom income, rate, etc.).
 
 ## Features
 
-- **Search Homes UI**: Filters (location, price range, beds, baths, down %, rate, term, tax, insurance, HOA, maintenance, take-home income, other needs, “only in safe range”). Sort by price, payment, affordability, newest. Listing cards show image, price, beds/baths/sqft, est. monthly payment, and **affordability badge** (Safe / Stretch / Over budget) with short explanation.
-- **Affordability logic**: Reuses the calculator’s 50/30/20 model. Implemented in `frontend/src/domain/listingAffordability.ts` — `computeListingAffordability()` returns total monthly (P&I, tax, insurance, PMI, HOA, maintenance) and an affordability summary. `frontend/src/lib/searchUtils.ts` maps that to tiers and explanation text.
-- **Tiers**: Based on housing share of income and 50% needs budget:
-  - **Safe** — within recommended range (green).
-  - **Stretch** — above target but under 50% needs (warning).
-  - **Over budget** — exceeds 50% needs (danger).
+- **Search form**: Location, max price, monthly/annual income, down payment %, interest rate. Required fields validated before submit.
+- **Listings with affordability**: Each listing shows price, address, beds/baths/sqft, estimated monthly payment, and status badge (Safe / Good / Stretch / Risky) with short message.
+- **Backend tiers**: Based on housing share of income and 50% needs budget — Safe (green), Good (blue), Stretch (yellow), Risky (red). Design tokens align with app theme.
 
 ## Architecture
 
@@ -22,41 +19,45 @@ Search for homes and see affordability analysis based on your financial profile.
 
 | Area | Purpose |
 |------|---------|
-| `src/domain/listingAffordability.ts` | `computeListingAffordability()` — same P&I, tax, insurance, PMI, HOA, maintenance and 50/30/20 as calculator |
-| `src/lib/searchUtils.ts` | `attachAffordability()`, `sortListings()`, `SearchFilters` type, `ListingWithAffordability` |
-| `src/lib/searchMock.ts` | `getListingsForSearch(filters)` — returns mock listings; **single swap point** for a real API |
-| `src/components/search/SearchHomesView.tsx` | Two-column layout; calls `getListingsForSearch` → `attachAffordability` → filter → sort |
-| `src/components/search/SearchFilters.tsx` | Filter form (Card, Input, Button from design system) |
-| `src/components/search/ListingCard.tsx` | Single listing card with theme-based badges and `formatCurrency` |
+| `src/components/RealEstateSearch.tsx` | Search form and results list; calls `searchRealEstateWithProfile()` from api.ts |
+| `src/lib/api.ts` | `searchRealEstate()`, `searchRealEstateWithProfile()` — POST to `/api/v1/real-estate/search` and `search-with-profile` |
+| `src/app/search/page.tsx` | Route that renders RealEstateSearch (nav: "Search Homes") |
 
-To connect a real listings API: implement a function that returns `Promise<RawListing[]>` (same shape as mock) and use it instead of `getListingsForSearch` in the data layer (e.g. in `searchMock.ts` or a new `searchApi.ts`). No change to SearchHomesView, SearchFilters, or ListingCard beyond the data source.
-
-### Backend (optional)
+### Backend
 
 - **`GET /api/v1/real-estate/current-rate`** — 30-year rate from FRED (see [FRED_INTEGRATION.md](FRED_INTEGRATION.md)).
 - **`POST /api/v1/real-estate/search`** — Listings with default financial assumptions.
-- **`POST /api/v1/real-estate/search-with-profile`** — Listings with custom income, down payment, rate, etc.
+- **`POST /api/v1/real-estate/search-with-profile`** — Listings with custom income, down payment %, rate, term, property tax, insurance, HOA (query params + body).
 
-Backend uses `real_estate_services/` (FRED, RapidAPI) and `schemas/real_estate.py`. Frontend Search Homes does not call these by default; it uses mock data for polish and recruiter demos. When you add a real API, the frontend can call these endpoints and map responses to `RawListing[]`, or use a different provider.
+Backend uses `real_estate_services/` (FRED, RapidAPI) and `schemas/real_estate.py`. Affordability is computed per listing using the same engine as the calculator.
+
+## Demo / sample data (intentional)
+
+When **`RAPIDAPI_KEY`** is not set, the backend returns **sample listings** so the search flow is testable without an API key. This is intentional and documented:
+
+- **Backend:** `real_estate_services/rapidapi.py` checks `RAPIDAPI_KEY`; if empty, it returns a fixed set of sample listings (California-area placeholder data) instead of calling RapidAPI. No fake data is generated on the frontend.
+- **Frontend:** The same UI and affordability logic run for both live and sample results; the user sees real affordability badges and monthly payment estimates. There is no separate "mock mode" toggle in the UI—demo mode is determined solely by the backend env.
+
+To use **live listings**, set `RAPIDAPI_KEY` in `infrastructure/.env` (or the environment where the backend runs).
 
 ## Setup
 
-### Frontend (Search Homes with mock data)
+### Frontend (Search Homes)
 
-No API keys required. From repo root:
+Backend must be running. From repo root:
 
 ```bash
 cd frontend && npm install && npm run dev
 ```
 
-Open **http://localhost:9002/search-homes**. Set filters and click “Search homes” to see mock listings with affordability badges.
+Open **http://localhost:9002/search**. Use the nav "Search Homes". Enter location, max price, income, and optional rate/down %; click "Search listings". Backend returns listings (RapidAPI if `RAPIDAPI_KEY` is set, otherwise sample data per above).
 
-### Backend (live rates + optional listing APIs)
+### Backend (live rates + listings)
 
-1. **FRED (rates):** Add `FRED_API_KEY` to `infrastructure/.env` (see [FRED_INTEGRATION.md](FRED_INTEGRATION.md)). Frontend calculator can call `GET /api/v1/real-estate/current-rate` for the rate.
-2. **RapidAPI (listings):** Add `RAPIDAPI_KEY` to use backend search endpoints with live data. Without it, backend search still returns sample data.
+1. **FRED (rates):** Add `FRED_API_KEY` to `infrastructure/.env` (see [FRED_INTEGRATION.md](FRED_INTEGRATION.md)). Backend endpoint `GET /api/v1/real-estate/current-rate` returns the current rate; the calculator uses a user-entered rate (no auto-fill from FRED in the UI today).
+2. **RapidAPI (listings):** Add `RAPIDAPI_KEY` to use live listing data. Without it, the backend returns intentional sample data (see Demo / sample data).
 
-## API (backend) reference
+## API reference
 
 ### GET `/api/v1/real-estate/current-rate`
 
@@ -64,14 +65,11 @@ Returns current 30-year fixed rate (FRED or default).
 
 ### POST `/api/v1/real-estate/search`
 
-Request body: `location`, `max_price`, `min_price`, `bedrooms`, `bathrooms`, `limit`, etc.  
-Response: `listings[]` with listing + affordability (status, monthly_payment, housing_pct_of_income, message).
+Request body: `location`, `max_price`, `min_price`, `bedrooms`, `bathrooms`, `limit`. Backend uses default profile (derived from max_price). Response: `listings[]` with listing + affordability (status, monthly_payment, message).
 
 ### POST `/api/v1/real-estate/search-with-profile`
 
-Same as search but with query/body params for monthly_income, down_payment_pct, interest_rate, term_years, property_tax_rate, insurance, hoa_monthly.
-
-Backend affordability uses its own calculation engine; status bands may differ slightly from the frontend 50/30/20 tiers (Safe / Stretch / Over budget). For a unified experience, the frontend Search Homes flow uses domain `computeListingAffordability()` and mock (or a future API that returns raw listing fields for the frontend to score).
+Same as search; financial profile passed as **query params**: `monthly_income`, `annual_income`, `down_payment_pct`, `interest_rate`, `term_years`, `property_tax_rate`, `insurance_annual`, `hoa_monthly`. Request **body**: same search filters (`location`, `max_price`, `min_price`, `bedrooms`, `bathrooms`, `limit`). The frontend (`api.ts`) calls this endpoint with body + query params in this format; no mismatch.
 
 ## Testing
 
@@ -79,13 +77,15 @@ Backend affordability uses its own calculation engine; status bands may differ s
 # Backend
 cd backend && pytest tests/test_api_real_estate.py -v
 
-# Frontend (unit tests for domain/search utils as needed)
+# Frontend unit tests
 cd frontend && npm test
+
+# E2E (covers calculator; add search flow as needed)
+cd frontend && npx playwright test
 ```
 
 ## Future work
 
-- Replace `getListingsForSearch()` with a real listings API (backend search-with-profile or another provider).
-- Optional: sync backend affordability bands with frontend 50/30/20 tiers if both are used.
-- Auth and saved profiles so Search Homes pre-fills income and assumptions.
+- Pre-fill search from calculator scenario (e.g. link from results with income/rate).
+- Auth and saved profiles so Search Homes can pre-fill from user profile.
 - Favorites, alerts, map view, comparison tool.

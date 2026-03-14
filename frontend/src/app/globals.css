@@ -37,8 +37,10 @@
   --color-text-secondary: #d1d5db;
   --color-border-subtle: var(--color-border);
   --primary-light: rgba(0, 201, 255, 0.08);
+  --success-bg: rgba(34, 197, 94, 0.1);
   --warning-bg: rgba(245, 158, 11, 0.1);
   --danger-bg: rgba(239, 68, 68, 0.1);
+  --wants-bg: rgba(96, 165, 250, 0.1);
 
   /* Spacing scale (8px base) */
   --space-1: 8px;

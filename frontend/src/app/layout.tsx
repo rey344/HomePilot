@@ -11,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "HomePilot – Homebuying & Financial Planning",
-  description: "True cost of homeownership and 50/30/20 affordability",
+  title: "HomePilot – Home Affordability",
+  description: "Monthly cost and 50/30/20 affordability",
 };
 
 export default function RootLayout({

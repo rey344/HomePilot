@@ -323,6 +323,7 @@ function num(v: unknown): number {
   return 0;
 }
 
+/** Direct API call for PITI; app uses fetchEnhancedLoanAnalysis for full analysis. */
 export async function fetchPiti(terms: LoanTerms): Promise<PitiResponse> {
   const res = await fetchWithTimeout(`${getBase()}/api/v1/calc/piti`, {
     method: "POST",
@@ -353,6 +354,7 @@ export async function fetchPiti(terms: LoanTerms): Promise<PitiResponse> {
   };
 }
 
+/** Direct API call for 50/30/20; app uses domain + fetchEnhancedLoanAnalysis. */
 export async function fetchAffordability(
   monthlyHousing: number,
   monthlyIncome: number,
@@ -414,6 +416,7 @@ export async function fetchHomeRecommendation(
   };
 }
 
+/** Search with default profile; app uses searchRealEstateWithProfile for custom income/rate. */
 export async function searchRealEstate(
   location: string,
   maxPrice: number,

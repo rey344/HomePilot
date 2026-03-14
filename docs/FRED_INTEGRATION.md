@@ -2,11 +2,11 @@
 
 ## What Was Set Up
 
-The HomePilot app now uses **real-time mortgage rates** from the Federal Reserve (FRED API) instead of hardcoded 6.5% rate.
+The **backend** can return **real-time mortgage rates** from the Federal Reserve (FRED API) via `GET /api/v1/real-estate/current-rate`. The real-estate search flow uses this rate when set. The calculator on the frontend uses a **user-entered rate** (it does not auto-fill from FRED unless you wire it to this endpoint).
 
 ---
 
-## 📍 Where to Add Your API Key
+## Where to Add Your API Key
 
 Copy [infrastructure/.env.example](../infrastructure/.env.example) to `infrastructure/.env` if you haven’t already, then add your FRED API key:
 
@@ -14,7 +14,7 @@ Copy [infrastructure/.env.example](../infrastructure/.env.example) to `infrastru
 FRED_API_KEY=your_fred_api_key_here
 ```
 
-That's it! The app will automatically use real rates.
+After restarting the backend, the current-rate endpoint and any backend logic that calls it (e.g. real-estate search) will use real rates.
 
 ---
 
@@ -102,7 +102,7 @@ If you don't set `FRED_API_KEY`, the app uses 6.5% default:
 1. **Add your FRED_API_KEY to** [infrastructure/.env](../infrastructure/.env) (copy from `.env.example` first if needed)
 2. **Restart your backend** to load the new config
 3. **Test the endpoint** (see above)
-4. Done! Your app now uses real rates 🎉
+4. Done! The backend current-rate endpoint (and flows that use it) now use real rates.
 
 ---
 

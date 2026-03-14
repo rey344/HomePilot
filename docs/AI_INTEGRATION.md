@@ -2,20 +2,18 @@
 
 ## Overview
 
-HomePilot uses **Groq AI** to generate personalized financial advice and homebuying explanations. Groq provides free, blazing-fast inference with Llama models. The system automatically falls back to rule-based responses if Groq is not configured.
+HomePilot uses **Groq** to generate personalized financial advice and homebuying explanations. Groq offers a free tier with Llama models. The system falls back to rule-based responses if Groq is not configured.
 
-## 🚀 Quick Start with Groq (FREE & Fast)
+## Quick Start with Groq
 
-Groq provides free, ultra-fast inference with Meta's Llama models - perfect for HomePilot!
-
-1. **Get FREE API key**: https://console.groq.com/keys
+1. **Get an API key**: https://console.groq.com/keys
 2. **Add to your `.env`:**
    ```bash
    GROQ_API_KEY=gsk_your_key_here
    ```
-3. **Restart backend** - that's it!
+3. **Restart backend.**
 
-## 🎛️ Configuration
+## Configuration
 
 All AI settings are optional. Add to your `.env`:
 
@@ -37,7 +35,7 @@ AI_MAX_TOKENS=500                   # Maximum tokens in response
 - `llama-3.1-8b-instant` - Fastest for simple queries
 - `mixtral-8x7b-32768` - Good for longer context
 
-## 📡 API Usage
+## API Usage
 
 ### Endpoint: `POST /api/v1/ai/explain`
 
@@ -91,22 +89,17 @@ Scenario-aware advisor: user asks follow-up questions; the model has context (ho
 **Request:** `{ "messages": [{ "role": "user"|"assistant", "content": "..." }], "scenario_context": { ... } }`  
 **Response:** `{ "message": { "role": "assistant", "content": "..." }, "provider", "model", "tokens_used" }`
 
-## 💰 Cost: Completely FREE!
+## Cost
 
-Groq provides generous free tier access:
+Groq provides a free tier:
 
-| Provider | Model | Cost per 1K requests | Cost per 1M requests |
-|----------|-------|---------------------|---------------------|
-| **Groq** | Llama 3.3 70B | **$0.00** | **$0.00** |
+| Provider | Model | Cost (free tier) |
+|----------|-------|------------------|
+| Groq | Llama 3.3 70B | $0.00 |
 
-**Why Groq?**
-- ✅ Completely **free** (generous limits)
-- ⚡ **Ultra-fast** inference (up to 800 tokens/sec)
-- 🎯 **High quality** with Llama 3.3 70B
-- 🔓 **No credit card required**
-- 🌐 **Great API** and reliability
+No credit card required for the free tier. See [Groq Console](https://console.groq.com/) for limits and usage.
 
-## 🧪 Testing
+## Testing
 
 The system automatically uses mock responses in tests (no API keys needed):
 
@@ -137,7 +130,7 @@ curl -X POST http://localhost:8000/api/v1/ai/explain \
   }'
 ```
 
-## 🔒 Security Best Practices
+## Security Best Practices
 
 1. **Never commit API keys** - They're in `.env` which is gitignored
 2. **Use environment variables** in production (Railway Secrets, Vercel Env Vars)
@@ -145,7 +138,7 @@ curl -X POST http://localhost:8000/api/v1/ai/explain \
 4. **Monitor usage** via Groq dashboard: https://console.groq.com/
 5. **Set rate limits** if deploying to production with heavy traffic
 
-## 🚧 Troubleshooting
+## Troubleshooting
 
 ### "Using mock provider (rule-based responses)"
 
@@ -186,14 +179,14 @@ pip install -r requirements.txt
 - If you hit limits, wait a few minutes or upgrade your account
 - Consider caching AI responses for common scenarios
 
-## 📚 Resources
+## Resources
 
 - **Groq Console**: https://console.groq.com/
 - **Groq Documentation**: https://console.groq.com/docs
 - **Get API Key**: https://console.groq.com/keys
 - **Llama Model Info**: https://www.llama.com/
 
-## 🎯 Advanced Usage
+## Advanced Usage
 
 ### Use Specific Model
 
@@ -211,7 +204,7 @@ AI_PROVIDER=mock
 # No API keys needed - uses rule-based responses
 ```
 
-## 📊 Monitoring Token Usage
+## Monitoring Token Usage
 
 Track usage in your application:
 
@@ -226,7 +219,7 @@ print(f"Tokens used: {result.tokens_used}")
 
 The response includes token counts for monitoring usage patterns.
 
-## 🆘 Support
+## Support
 
 For issues:
 1. Check the logs: `docker compose -f infrastructure/docker-compose.yml logs backend`
@@ -242,4 +235,4 @@ For issues:
 3. Restart backend: `docker compose restart backend`
 4. Test: `curl -X POST http://localhost:9001/api/v1/ai/explain -H "Content-Type: application/json" -d '{ ... }'` with sample request body
 
-You now have production-ready AI integration! 🎉
+You now have production-ready AI integration.
