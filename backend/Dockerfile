@@ -16,9 +16,9 @@ COPY alembic.ini .
 # Run from project root so `app` package resolves
 ENV PYTHONPATH=/app
 
-# Health check
+# Health check (uses PORT at runtime so Railway healthcheck succeeds)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
+  CMD curl -f "http://localhost:${PORT:-8000}/health" || exit 1
 
 # Startup script to run migrations then start server
 COPY <<'EOF' /app/entrypoint.sh
@@ -26,8 +26,8 @@ COPY <<'EOF' /app/entrypoint.sh
 set -e
 echo "Running database migrations..."
 alembic upgrade head || echo "Migration failed or not needed"
-echo "Starting uvicorn server..."
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+echo "Starting uvicorn server on port ${PORT:-8000}..."
+exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
 EOF
 
 RUN chmod +x /app/entrypoint.sh
